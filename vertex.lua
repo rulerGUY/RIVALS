@@ -17528,7 +17528,214 @@ end
         })
     end
 
-         ----------------------------------------------------------------
+        ----------------------------------------------------------------
+        -- miscellaneous
+        ----------------------------------------------------------------
+        local v555 = Tabs.Misc:AddRightGroupbox('miscellaneous')
+
+        _G.Features = _G.Features or {}
+        _G.Features.Noclip = _G.Features.Noclip or { Enabled = false, Conn = nil }
+        _G.Features.Handicaps = _G.Features.Handicaps or { Enabled = false }
+        _G.Features.ModDetector = _G.Features.ModDetector or {
+            Enabled = false, Connection = nil, Checking = false
+        }
+
+        local function updNoclip()
+            if _G.Features.Noclip.Conn then
+                _G.Features.Noclip.Conn:Disconnect()
+                _G.Features.Noclip.Conn = nil
+            end
+            local character = lp.Character
+            if not character then return end
+            if _G.Features.Noclip.Enabled then
+                _G.Features.Noclip.Conn = RunService.Stepped:Connect(function()
+                    local cur = lp.Character
+                    if not cur then return end
+                    for _, part in pairs(cur:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
+                        end
+                    end
+                end)
+            else
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = true
+                    end
+                end
+            end
+        end
+
+        lp.CharacterAdded:Connect(function()
+            task.wait(0.2)
+            if _G.Features.Noclip.Enabled then updNoclip() end
+        end)
+
+        v555:AddToggle('noclip', {
+            Text = 'noclip',
+            Default = false,
+            Callback = function(Value)
+                _G.Features.Noclip.Enabled = Value
+                updNoclip()
+            end
+        })
+
+        local function updHandicaps()
+            pcall(function()
+                local debugMod = lp.PlayerScripts.Controllers:FindFirstChild("DebugController")
+                if not debugMod then return end
+                local DebugController = require(debugMod)
+                DebugController:SetHandicapsEnabled(_G.Features.Handicaps.Enabled == true)
+            end)
+        end
+
+        v555:AddToggle('handcaps', {
+            Text = 'enable handicaps',
+            Default = false,
+            Callback = function(val)
+                _G.Features.Handicaps.Enabled = val
+                updHandicaps()
+            end
+        })
+
+        local trip_hrp, trip_conn_a, trip_conn_b
+
+        local function gethrp()
+            pcall(function()
+                trip_hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+            end)
+        end
+
+        local function detTrip()
+            pcall(function()
+                if not trip_hrp then return end
+                for _, s in ipairs(workspace:GetChildren()) do
+                    if s.Name == "SubspaceTripmineHitbox" then
+                        local hb = s:FindFirstChild("Hitbox")
+                        if hb and firetouchinterest then
+                            firetouchinterest(trip_hrp, hb, 1)
+                            firetouchinterest(trip_hrp, hb, 0)
+                        end
+                    end
+                end
+            end)
+        end
+
+        v555:AddToggle("AntiTrip", {
+            Text = "anti subspace tripmine",
+            Default = false,
+            Callback = function(val)
+                if trip_conn_a then trip_conn_a:Disconnect() trip_conn_a = nil end
+                if trip_conn_b then trip_conn_b:Disconnect() trip_conn_b = nil end
+                if val then
+                    gethrp()
+                    trip_conn_a = RunService.Heartbeat:Connect(gethrp)
+                    trip_conn_b = RunService.Heartbeat:Connect(detTrip)
+                else
+                    trip_hrp = nil
+                end
+            end
+        })
+
+        v555:AddToggle("AntiFlashbang", {
+            Text = "anti flashbang",
+            Default = false,
+            Callback = function(val)
+                if not val then return end
+                pcall(function()
+                    local itemLib = require(ReplicatedStorage.Modules.ItemLibrary)
+                    local flash = itemLib and itemLib.Items and itemLib.Items.Flashbang
+                    if flash then
+                        flash.BlindDuration = 0
+                        if flash.Info then flash.Info.BlindDuration = 0 end
+                    end
+                end)
+            end
+        })
+
+        local function stopModDetector()
+            if _G.Features.ModDetector.Connection then
+                _G.Features.ModDetector.Connection:Disconnect()
+                _G.Features.ModDetector.Connection = nil
+            end
+            _G.Features.ModDetector.Checking = false
+        end
+
+        local function modDetector()
+            if not _G.Features.ModDetector.Enabled then return end
+            if _G.Features.ModDetector.Checking then return end
+            if game.GameId ~= 6035872082 then return end
+            _G.Features.ModDetector.Checking = true
+
+            task.spawn(function()
+                if game.CreatorType ~= Enum.CreatorType.Group then
+                    _G.Features.ModDetector.Checking = false
+                    return
+                end
+                local groupId = game.CreatorId
+
+                local function isStaffRole(roleName)
+                    if type(roleName) ~= "string" then return false end
+                    local lower = string.lower(roleName)
+                    return string.find(lower, "mod")
+                        or string.find(lower, "staff")
+                        or string.find(lower, "admin")
+                        or string.find(lower, "owner")
+                end
+
+                local function checkPlayer(player)
+                    if player == lp then return false end
+                    local ok, role = pcall(function()
+                        return player:GetRoleInGroup(groupId)
+                    end)
+                    return ok and role and isStaffRole(role)
+                end
+
+                local function kickPlayer()
+                    pcall(function() lp:Kick("Mod Detected!") end)
+                    task.wait(0.5)
+                    pcall(function() game:Shutdown() end)
+                end
+
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if checkPlayer(player) then
+                        kickPlayer()
+                        _G.Features.ModDetector.Checking = false
+                        return
+                    end
+                end
+
+                _G.Features.ModDetector.Connection = Players.PlayerAdded:Connect(function(player)
+                    if not _G.Features.ModDetector.Enabled then return end
+                    task.wait(1)
+                    if checkPlayer(player) then kickPlayer() end
+                end)
+
+                while _G.Features.ModDetector.Enabled do
+                    task.wait(15)
+                    if not _G.Features.ModDetector.Enabled then break end
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if checkPlayer(player) then
+                            kickPlayer()
+                            break
+                        end
+                    end
+                end
+                _G.Features.ModDetector.Checking = false
+            end)
+        end
+
+        v555:AddToggle('moddetector', {
+            Text = 'mod detector',
+            Default = false,
+            Callback = function(Value)
+                _G.Features.ModDetector.Enabled = Value
+                if Value then modDetector() else stopModDetector() end
+            end
+        })
+    end
+
+        ----------------------------------------------------------------
     -- Client feel + no weapon cooldowns
     ----------------------------------------------------------------
     do
@@ -17745,9 +17952,9 @@ end
             pcall(feelStep)
         end)
 
-        local box = Tabs.Misc:AddRightGroupbox('Extra Features')
+        local exbox = Tabs.Misc:AddRightGroupbox('Extra Features')
 
-        box:AddToggle('FeelNoSway', {
+        exbox:AddToggle('FeelNoSway', {
             Text = 'No camera sway',
             Default = Config.NoCameraSway,
             Tooltip = 'Stops the view from bobbing while you move or aim',
@@ -17757,7 +17964,7 @@ end
             end
         })
 
-        box:AddToggle('FeelCustomAdsFov', {
+        exbox:AddToggle('FeelCustomAdsFov', {
             Text = 'Custom ADS FOV',
             Default = Config.CustomAdsFov,
             Tooltip = 'Lets you set how zoomed-in aiming feels',
@@ -17767,7 +17974,7 @@ end
             end
         })
 
-        box:AddSlider('FeelAdsFovOffset', {
+        exbox:AddSlider('FeelAdsFovOffset', {
             Text = 'ADS FOV offset',
             Default = Config.AdsFovOffset or 0,
             Min = -80,
@@ -17780,7 +17987,7 @@ end
             end
         })
 
-        box:AddToggle('FeelInstantEquip', {
+        exbox:AddToggle('FeelInstantEquip', {
             Text = 'Instant equip',
             Default = Config.InstantEquip,
             Tooltip = 'Pull out weapons with no equip delay',
@@ -17790,7 +17997,7 @@ end
             end
         })
 
-        box:AddToggle('FeelNoWeaponCd', {
+        exbox:AddToggle('FeelNoWeaponCd', {
             Text = 'No weapon cooldowns',
             Default = Config.NoWeaponCooldown,
             Tooltip = 'Removes shoot, attack and ability wait times on your client',
@@ -17801,7 +18008,7 @@ end
             end
         })
 
-        box:AddToggle('FeelAlwaysDmg', {
+        exbox:AddToggle('FeelAlwaysDmg', {
             Text = 'Always damage numbers',
             Default = Config.AlwaysDamageNums,
             Tooltip = 'Shows damage numbers even when the game would hide them',
@@ -17811,7 +18018,7 @@ end
             end
         })
 
-        box:AddToggle('FeelNoInspectCd', {
+        exbox:AddToggle('FeelNoInspectCd', {
             Text = 'No inspect cooldown',
             Default = Config.NoInspectCooldown,
             Tooltip = 'Inspect your weapon as often as you want',
@@ -17821,213 +18028,7 @@ end
             end
         })
     end
-
-        ----------------------------------------------------------------
-        -- miscellaneous
-        ----------------------------------------------------------------
-        local v555 = Tabs.Misc:AddRightGroupbox('miscellaneous')
-
-        _G.Features = _G.Features or {}
-        _G.Features.Noclip = _G.Features.Noclip or { Enabled = false, Conn = nil }
-        _G.Features.Handicaps = _G.Features.Handicaps or { Enabled = false }
-        _G.Features.ModDetector = _G.Features.ModDetector or {
-            Enabled = false, Connection = nil, Checking = false
-        }
-
-        local function updNoclip()
-            if _G.Features.Noclip.Conn then
-                _G.Features.Noclip.Conn:Disconnect()
-                _G.Features.Noclip.Conn = nil
-            end
-            local character = lp.Character
-            if not character then return end
-            if _G.Features.Noclip.Enabled then
-                _G.Features.Noclip.Conn = RunService.Stepped:Connect(function()
-                    local cur = lp.Character
-                    if not cur then return end
-                    for _, part in pairs(cur:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end)
-            else
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
-            end
-        end
-
-        lp.CharacterAdded:Connect(function()
-            task.wait(0.2)
-            if _G.Features.Noclip.Enabled then updNoclip() end
-        end)
-
-        v555:AddToggle('noclip', {
-            Text = 'noclip',
-            Default = false,
-            Callback = function(Value)
-                _G.Features.Noclip.Enabled = Value
-                updNoclip()
-            end
-        })
-
-        local function updHandicaps()
-            pcall(function()
-                local debugMod = lp.PlayerScripts.Controllers:FindFirstChild("DebugController")
-                if not debugMod then return end
-                local DebugController = require(debugMod)
-                DebugController:SetHandicapsEnabled(_G.Features.Handicaps.Enabled == true)
-            end)
-        end
-
-        v555:AddToggle('handcaps', {
-            Text = 'enable handicaps',
-            Default = false,
-            Callback = function(val)
-                _G.Features.Handicaps.Enabled = val
-                updHandicaps()
-            end
-        })
-
-        local trip_hrp, trip_conn_a, trip_conn_b
-
-        local function gethrp()
-            pcall(function()
-                trip_hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-            end)
-        end
-
-        local function detTrip()
-            pcall(function()
-                if not trip_hrp then return end
-                for _, s in ipairs(workspace:GetChildren()) do
-                    if s.Name == "SubspaceTripmineHitbox" then
-                        local hb = s:FindFirstChild("Hitbox")
-                        if hb and firetouchinterest then
-                            firetouchinterest(trip_hrp, hb, 1)
-                            firetouchinterest(trip_hrp, hb, 0)
-                        end
-                    end
-                end
-            end)
-        end
-
-        v555:AddToggle("AntiTrip", {
-            Text = "anti subspace tripmine",
-            Default = false,
-            Callback = function(val)
-                if trip_conn_a then trip_conn_a:Disconnect() trip_conn_a = nil end
-                if trip_conn_b then trip_conn_b:Disconnect() trip_conn_b = nil end
-                if val then
-                    gethrp()
-                    trip_conn_a = RunService.Heartbeat:Connect(gethrp)
-                    trip_conn_b = RunService.Heartbeat:Connect(detTrip)
-                else
-                    trip_hrp = nil
-                end
-            end
-        })
-
-        v555:AddToggle("AntiFlashbang", {
-            Text = "anti flashbang",
-            Default = false,
-            Callback = function(val)
-                if not val then return end
-                pcall(function()
-                    local itemLib = require(ReplicatedStorage.Modules.ItemLibrary)
-                    local flash = itemLib and itemLib.Items and itemLib.Items.Flashbang
-                    if flash then
-                        flash.BlindDuration = 0
-                        if flash.Info then flash.Info.BlindDuration = 0 end
-                    end
-                end)
-            end
-        })
-
-        local function stopModDetector()
-            if _G.Features.ModDetector.Connection then
-                _G.Features.ModDetector.Connection:Disconnect()
-                _G.Features.ModDetector.Connection = nil
-            end
-            _G.Features.ModDetector.Checking = false
-        end
-
-        local function modDetector()
-            if not _G.Features.ModDetector.Enabled then return end
-            if _G.Features.ModDetector.Checking then return end
-            if game.GameId ~= 6035872082 then return end
-            _G.Features.ModDetector.Checking = true
-
-            task.spawn(function()
-                if game.CreatorType ~= Enum.CreatorType.Group then
-                    _G.Features.ModDetector.Checking = false
-                    return
-                end
-                local groupId = game.CreatorId
-
-                local function isStaffRole(roleName)
-                    if type(roleName) ~= "string" then return false end
-                    local lower = string.lower(roleName)
-                    return string.find(lower, "mod")
-                        or string.find(lower, "staff")
-                        or string.find(lower, "admin")
-                        or string.find(lower, "owner")
-                end
-
-                local function checkPlayer(player)
-                    if player == lp then return false end
-                    local ok, role = pcall(function()
-                        return player:GetRoleInGroup(groupId)
-                    end)
-                    return ok and role and isStaffRole(role)
-                end
-
-                local function kickPlayer()
-                    pcall(function() lp:Kick("Mod Detected!") end)
-                    task.wait(0.5)
-                    pcall(function() game:Shutdown() end)
-                end
-
-                for _, player in ipairs(Players:GetPlayers()) do
-                    if checkPlayer(player) then
-                        kickPlayer()
-                        _G.Features.ModDetector.Checking = false
-                        return
-                    end
-                end
-
-                _G.Features.ModDetector.Connection = Players.PlayerAdded:Connect(function(player)
-                    if not _G.Features.ModDetector.Enabled then return end
-                    task.wait(1)
-                    if checkPlayer(player) then kickPlayer() end
-                end)
-
-                while _G.Features.ModDetector.Enabled do
-                    task.wait(15)
-                    if not _G.Features.ModDetector.Enabled then break end
-                    for _, player in ipairs(Players:GetPlayers()) do
-                        if checkPlayer(player) then
-                            kickPlayer()
-                            break
-                        end
-                    end
-                end
-                _G.Features.ModDetector.Checking = false
-            end)
-        end
-
-        v555:AddToggle('moddetector', {
-            Text = 'mod detector',
-            Default = false,
-            Callback = function(Value)
-                _G.Features.ModDetector.Enabled = Value
-                if Value then modDetector() else stopModDetector() end
-            end
-        })
-    end
+    
         do
         ----------------------------------------------------------------
         -- Anti Aim
