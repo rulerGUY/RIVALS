@@ -17745,7 +17745,7 @@ end
             pcall(feelStep)
         end)
 
-        local box = Tabs.Misc:AddLeftGroupbox('Extra Features')
+        local box = Tabs.Misc:AddRightGroupbox('Extra Features')
 
         box:AddToggle('FeelNoSway', {
             Text = 'No camera sway',
