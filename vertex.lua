@@ -17313,6 +17313,515 @@ end
             })
         end
 
+            ----------------------------------------------------------------
+    -- Gun Mods
+    ----------------------------------------------------------------
+    do
+        Config.NoRecoil   = Config.NoRecoil == true
+        Config.NoSpread   = Config.NoSpread == true
+        Config.EquipSpeed = tonumber(Config.EquipSpeed) or 1
+
+        local gunModState = {
+            patchedItems = setmetatable({}, { __mode = "k" }),
+            spreadHooked = false,
+            spreadBase   = nil,
+        }
+
+        local function getLocalFighter()
+            return Rivals.Fighter and Rivals.Fighter.LocalFighter
+        end
+
+        local function patchItemRecoil(item)
+            if not item or gunModState.patchedItems[item] then return end
+            gunModState.patchedItems[item] = true
+
+            if type(item._Recoil) == "function" then
+                local oldRecoil = item._Recoil
+                item.__vertexOldRecoil = oldRecoil
+                item._Recoil = function(self, scale, ...)
+                    if Config.NoRecoil then
+                        return
+                    end
+                    return oldRecoil(self, scale, ...)
+                end
+            end
+        end
+
+        local function applyInfoMods(item)
+            if not item or not item.Info then return end
+
+            -- ShootRecoil: save once, zero when on, restore when off
+            pcall(function()
+                if item.Info.ShootRecoil ~= nil then
+                    if item.__vertexOrigShootRecoil == nil then
+                        item.__vertexOrigShootRecoil = item.Info.ShootRecoil
+                    end
+                    if Config.NoRecoil then
+                        item.Info.ShootRecoil = 0
+                    else
+                        item.Info.ShootRecoil = item.__vertexOrigShootRecoil
+                    end
+                end
+            end)
+
+            -- spread Info fields
+            pcall(function()
+                local info = item.Info
+                for _, key in ipairs({ "ShootSpread", "Spread", "MaxSpread", "MinSpread", "Accuracy" }) do
+                    if info[key] ~= nil and type(info[key]) == "number" then
+                        local origKey = "__vertexOrig" .. key
+                        if item[origKey] == nil then
+                            item[origKey] = info[key]
+                        end
+                        if Config.NoSpread then
+                            info[key] = 0
+                        else
+                            info[key] = item[origKey]
+                        end
+                    end
+                end
+            end)
+
+            -- equip speed
+            pcall(function()
+                if item.Info.EquipDuration ~= nil then
+                    if item.__vertexOrigEquipDuration == nil then
+                        item.__vertexOrigEquipDuration = item.Info.EquipDuration
+                    end
+                    local mult = math.clamp(tonumber(Config.EquipSpeed) or 1, 1, 10)
+                    if mult <= 1 then
+                        item.Info.EquipDuration = item.__vertexOrigEquipDuration
+                    else
+                        item.Info.EquipDuration = item.__vertexOrigEquipDuration / mult
+                    end
+                end
+            end)
+        end
+
+        local function gunModsStep()
+            local lf = getLocalFighter()
+            if lf and lf.Items then
+                for _, item in pairs(lf.Items) do
+                    patchItemRecoil(item)
+                    applyInfoMods(item)
+                end
+            end
+        end
+
+        local function restoreAllRecoil()
+            local lf = getLocalFighter()
+            if not lf or not lf.Items then return end
+            for _, item in pairs(lf.Items) do
+                pcall(function()
+                    if item.Info and item.__vertexOrigShootRecoil ~= nil then
+                        item.Info.ShootRecoil = item.__vertexOrigShootRecoil
+                    end
+                end)
+                applyInfoMods(item)
+            end
+        end
+
+        local function installNoSpreadHook()
+            if not Rivals.Gun or type(Rivals.Gun.StartShooting) ~= "function" then
+                return false
+            end
+
+            local current = Rivals.Gun.StartShooting
+            if not gunModState.spreadHooked or current ~= gunModState.spreadWrapper then
+                gunModState.spreadBase = current
+            end
+
+            local base = gunModState.spreadBase
+            if type(base) ~= "function" then return false end
+
+            if setreadonly then pcall(setreadonly, Rivals.Gun, false) end
+
+            local wrapper
+            wrapper = function(controller, ...)
+                local a, b, c, d, e, f, g, h, i, j = base(controller, ...)
+
+                if Config.NoSpread then
+                    local ok, isLocal = pcall(function()
+                        return controller and controller.ClientFighter and controller.ClientFighter.IsLocalPlayer
+                    end)
+                    if ok and isLocal then
+                        d = true
+                    end
+                end
+
+                return a, b, c, d, e, f, g, h, i, j
+            end
+
+            if newcclosure then
+                wrapper = newcclosure(wrapper)
+            end
+
+            Rivals.Gun.StartShooting = wrapper
+            gunModState.spreadWrapper = wrapper
+            gunModState.spreadHooked = true
+            return true
+        end
+
+        task.spawn(function()
+            while true do
+                task.wait(0.35)
+                pcall(gunModsStep)
+                pcall(installNoSpreadHook)
+            end
+        end)
+
+        lp.CharacterAdded:Connect(function()
+            task.wait(0.6)
+            gunModState.spreadHooked = false
+            pcall(gunModsStep)
+            pcall(installNoSpreadHook)
+        end)
+
+        local prevHookGun = hookGunModule
+        hookGunModule = function(...)
+            if prevHookGun then pcall(prevHookGun, ...) end
+            gunModState.spreadHooked = false
+            task.defer(function()
+                pcall(installNoSpreadHook)
+            end)
+        end
+
+        local gm = Tabs.Misc:AddRightGroupbox('gun mods')
+
+        gm:AddToggle('GunNoRecoil', {
+            Text = 'No recoil',
+            Default = Config.NoRecoil,
+            Tooltip = 'Removes camera kick when shooting',
+            Callback = function(v)
+                Config.NoRecoil = v and true or false
+                if not Config.NoRecoil then
+                    pcall(restoreAllRecoil)
+                end
+                pcall(gunModsStep)
+            end
+        })
+
+        gm:AddToggle('GunNoSpread', {
+            Text = 'No spread',
+            Default = Config.NoSpread,
+            Tooltip = 'Keeps shots tight — bullets stay accurate instead of spraying',
+            Callback = function(v)
+                Config.NoSpread = v and true or false
+                gunModState.spreadHooked = false
+                pcall(installNoSpreadHook)
+                pcall(gunModsStep)
+            end
+        })
+
+        gm:AddSlider('GunEquipSpeed', {
+            Text = 'Equip speed',
+            Default = Config.EquipSpeed or 1,
+            Min = 1,
+            Max = 10,
+            Rounding = 1,
+            Suffix = 'x',
+            Tooltip = 'How fast you pull out weapons (higher = faster)',
+            Callback = function(v)
+                Config.EquipSpeed = v
+                pcall(gunModsStep)
+            end
+        })
+    end
+
+         ----------------------------------------------------------------
+    -- Client feel + no weapon cooldowns
+    ----------------------------------------------------------------
+    do
+        Config.NoCameraSway     = Config.NoCameraSway == true
+        Config.CustomAdsFov     = Config.CustomAdsFov == true
+        Config.AdsFovOffset     = tonumber(Config.AdsFovOffset) or 0
+        Config.InstantEquip     = Config.InstantEquip == true
+        Config.AlwaysDamageNums = Config.AlwaysDamageNums == true
+        Config.NoInspectCooldown = Config.NoInspectCooldown == true
+        Config.NoWeaponCooldown  = Config.NoWeaponCooldown == true
+
+        local feelState = {
+            patchedFighters = setmetatable({}, { __mode = "k" }),
+            patchedItems    = setmetatable({}, { __mode = "k" }),
+            dmgHooked       = false,
+        }
+
+        local COOLDOWN_KEYS = {
+            "ShootCooldown", "AttackCooldown", "DashCooldown", "Cooldown", "SpinCooldown",
+            "EquipCooldown", "ReloadCooldown", "AbilityCooldown", "AirblastCooldown",
+            "GrappleCooldown", "HookCooldown", "SpearCooldown",
+        }
+
+        local function getLocalFighter()
+            return Rivals.Fighter and Rivals.Fighter.LocalFighter
+        end
+
+        local function patchFighter(lf)
+            if not lf or feelState.patchedFighters[lf] then return end
+            feelState.patchedFighters[lf] = true
+
+            if type(lf.GetCameraSway) == "function" then
+                local old = lf.GetCameraSway
+                lf.GetCameraSway = function(self, ...)
+                    if Config.NoCameraSway then
+                        return Vector2.zero
+                    end
+                    return old(self, ...)
+                end
+            end
+
+            -- skip equip animation when InstantEquip is on
+            if type(lf.ShouldSkipEquipAnimation) == "function" then
+                local oldSkip = lf.ShouldSkipEquipAnimation
+                lf.ShouldSkipEquipAnimation = function(self, ...)
+                    if Config.InstantEquip then
+                        return true
+                    end
+                    return oldSkip(self, ...)
+                end
+            end
+        end
+
+        local function applyFovOffset(lf)
+            if not lf then return end
+            if Config.CustomAdsFov then
+                if lf.__vertexOrigFovOffset == nil then
+                    lf.__vertexOrigFovOffset = lf._fov_offset or 0
+                end
+                lf._fov_offset = Config.AdsFovOffset
+            elseif lf.__vertexOrigFovOffset ~= nil then
+                lf._fov_offset = lf.__vertexOrigFovOffset
+            end
+        end
+
+        local function zeroItemCooldowns(item)
+            if not item then return end
+            pcall(function()
+                item._equip_cooldown = 0
+                item._inspect_cooldown = 0
+            end)
+            if not item.Info then return end
+            for _, key in ipairs(COOLDOWN_KEYS) do
+                pcall(function()
+                    if item.Info[key] ~= nil and type(item.Info[key]) == "number" then
+                        local orig = "__vertexOrigCd_" .. key
+                        if item[orig] == nil then
+                            item[orig] = item.Info[key]
+                        end
+                        if Config.NoWeaponCooldown or (Config.InstantEquip and key == "EquipCooldown") then
+                            item.Info[key] = 0
+                        else
+                            item.Info[key] = item[orig]
+                        end
+                    end
+                end)
+            end
+            -- equip duration (anim length) as well
+            pcall(function()
+                if item.Info.EquipDuration ~= nil then
+                    if item.__vertexFeelOrigEquipDur == nil then
+                        item.__vertexFeelOrigEquipDur = item.Info.EquipDuration
+                    end
+                    if Config.InstantEquip then
+                        item.Info.EquipDuration = 0
+                    else
+                        item.Info.EquipDuration = item.__vertexFeelOrigEquipDur
+                    end
+                end
+            end)
+        end
+
+        local function patchItem(item)
+            if not item or feelState.patchedItems[item] then return end
+            feelState.patchedItems[item] = true
+
+            if type(item.Equip) == "function" then
+                local oldEquip = item.Equip
+                item.Equip = function(self, ...)
+                    if Config.InstantEquip then
+                        zeroItemCooldowns(self)
+                        self._equip_cooldown = 0
+                    end
+                    local r = oldEquip(self, ...)
+                    if Config.InstantEquip then
+                        self._equip_cooldown = 0
+                    end
+                    return r
+                end
+            end
+
+            if type(item.IsEquipping) == "function" then
+                local oldIs = item.IsEquipping
+                item.IsEquipping = function(self, ...)
+                    if Config.InstantEquip then
+                        return false
+                    end
+                    return oldIs(self, ...)
+                end
+            end
+
+            if type(item.StartInspecting) == "function" then
+                local oldInspect = item.StartInspecting
+                item.StartInspecting = function(self, ...)
+                    if Config.NoInspectCooldown then
+                        self._inspect_cooldown = 0
+                    end
+                    return oldInspect(self, ...)
+                end
+            end
+        end
+
+        -- Emperor-style: zero cooldown fields on live tables in GC
+        local function applyNoCooldownGc()
+            if not getgc then return end
+            for _, key in ipairs(COOLDOWN_KEYS) do
+                pcall(function()
+                    for _, gcVal in pairs(getgc(true)) do
+                        if type(gcVal) == "table" then
+                            local v = rawget(gcVal, key)
+                            if type(v) == "number" and v > 0 then
+                                rawset(gcVal, key, 0)
+                            end
+                        end
+                    end
+                end)
+            end
+        end
+
+        local function patchReplicate(lf)
+            if not lf or type(lf.ReplicateFromServer) ~= "function" then return end
+            if lf.__vertexDmgRepHooked then return end
+            lf.__vertexDmgRepHooked = true
+
+            local old = lf.ReplicateFromServer
+            lf.ReplicateFromServer = function(self, kind, ...)
+                if Config.AlwaysDamageNums and kind == "DamageNumberEffect" then
+                    return self:_DamageNumberEffect(...)
+                end
+                return old(self, kind, ...)
+            end
+        end
+
+        local function feelStep()
+            local lf = getLocalFighter()
+            if not lf then return end
+
+            patchFighter(lf)
+            applyFovOffset(lf)
+            patchReplicate(lf)
+
+            -- clear emote equip lock
+            if Config.InstantEquip then
+                lf._equip_cooldown_from_emoting = 0
+            end
+
+            if lf.Items then
+                for _, item in pairs(lf.Items) do
+                    patchItem(item)
+                    zeroItemCooldowns(item)
+                    if Config.NoInspectCooldown then
+                        pcall(function() item._inspect_cooldown = 0 end)
+                    end
+                end
+            end
+
+            if Config.NoWeaponCooldown then
+                pcall(applyNoCooldownGc)
+            end
+        end
+
+        task.spawn(function()
+            while true do
+                task.wait(0.2)
+                pcall(feelStep)
+            end
+        end)
+
+        lp.CharacterAdded:Connect(function()
+            task.wait(0.6)
+            feelState.patchedFighters = setmetatable({}, { __mode = "k" })
+            feelState.patchedItems = setmetatable({}, { __mode = "k" })
+            feelState.dmgHooked = false
+            pcall(feelStep)
+        end)
+
+        local box = Tabs.Misc:AddLeftGroupbox('Extra Features')
+
+        box:AddToggle('FeelNoSway', {
+            Text = 'No camera sway',
+            Default = Config.NoCameraSway,
+            Tooltip = 'Stops the view from bobbing while you move or aim',
+            Callback = function(v)
+                Config.NoCameraSway = v and true or false
+                pcall(feelStep)
+            end
+        })
+
+        box:AddToggle('FeelCustomAdsFov', {
+            Text = 'Custom ADS FOV',
+            Default = Config.CustomAdsFov,
+            Tooltip = 'Lets you set how zoomed-in aiming feels',
+            Callback = function(v)
+                Config.CustomAdsFov = v and true or false
+                pcall(feelStep)
+            end
+        })
+
+        box:AddSlider('FeelAdsFovOffset', {
+            Text = 'ADS FOV offset',
+            Default = Config.AdsFovOffset or 0,
+            Min = -80,
+            Max = 80,
+            Rounding = 1,
+            Tooltip = 'Negative = more zoom, positive = less zoom',
+            Callback = function(v)
+                Config.AdsFovOffset = v
+                pcall(feelStep)
+            end
+        })
+
+        box:AddToggle('FeelInstantEquip', {
+            Text = 'Instant equip',
+            Default = Config.InstantEquip,
+            Tooltip = 'Pull out weapons with no equip delay',
+            Callback = function(v)
+                Config.InstantEquip = v and true or false
+                pcall(feelStep)
+            end
+        })
+
+        box:AddToggle('FeelNoWeaponCd', {
+            Text = 'No weapon cooldowns',
+            Default = Config.NoWeaponCooldown,
+            Tooltip = 'Removes shoot, attack and ability wait times on your client',
+            Callback = function(v)
+                Config.NoWeaponCooldown = v and true or false
+                if v then pcall(applyNoCooldownGc) end
+                pcall(feelStep)
+            end
+        })
+
+        box:AddToggle('FeelAlwaysDmg', {
+            Text = 'Always damage numbers',
+            Default = Config.AlwaysDamageNums,
+            Tooltip = 'Shows damage numbers even when the game would hide them',
+            Callback = function(v)
+                Config.AlwaysDamageNums = v and true or false
+                pcall(feelStep)
+            end
+        })
+
+        box:AddToggle('FeelNoInspectCd', {
+            Text = 'No inspect cooldown',
+            Default = Config.NoInspectCooldown,
+            Tooltip = 'Inspect your weapon as often as you want',
+            Callback = function(v)
+                Config.NoInspectCooldown = v and true or false
+                pcall(feelStep)
+            end
+        })
+    end
+
         ----------------------------------------------------------------
         -- miscellaneous
         ----------------------------------------------------------------
@@ -18039,5 +18548,179 @@ end
             task.wait(0.5)
         end
     end)
+    do
+        local DISCORD_INVITE = "https://discord.gg/2EbdNdb3Ta"
+        local MARK_FILE = "Vertex/discord_gate_ok"
+        local MARK_GENV = "VertexDiscordGateDone"
+
+        local already = false
+        pcall(function()
+            if getgenv and getgenv()[MARK_GENV] == true then already = true end
+        end)
+        pcall(function()
+            if isfile and isfile(MARK_FILE) then already = true end
+        end)
+
+        if already then
+            if getgenv then getgenv().VertexDiscordGateActive = false end
+        else
+            if getgenv then getgenv().VertexDiscordGateActive = true end
+
+            -- force menu closed + block Library:Toggle until copy
+            pcall(function()
+                if Library.Toggled == true then
+                    Library:Toggle()
+                end
+            end)
+
+            local oldToggle = Library.Toggle
+            Library.Toggle = function(self, ...)
+                if getgenv and getgenv().VertexDiscordGateActive == true then
+                    return
+                end
+                return oldToggle(self, ...)
+            end
+
+            local parent = (gethui and gethui()) or game:GetService("CoreGui")
+            local gui = Instance.new("ScreenGui")
+            gui.Name = "VertexDiscordGate"
+            gui.ResetOnSpawn = false
+            gui.IgnoreGuiInset = true
+            gui.DisplayOrder = 2147483647
+            gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
+            gui.Parent = parent
+
+            -- full-screen click sink (blocks mouse on everything under it)
+            local sink = Instance.new("TextButton")
+            sink.Name = "Sink"
+            sink.Size = UDim2.fromScale(1, 1)
+            sink.Position = UDim2.fromScale(0, 0)
+            sink.BackgroundColor3 = Color3.new(0, 0, 0)
+            sink.BackgroundTransparency = 0.35
+            sink.BorderSizePixel = 0
+            sink.Text = ""
+            sink.AutoButtonColor = false
+            sink.ZIndex = 1
+            sink.Modal = true -- blocks game camera / character input
+            sink.Parent = gui
+
+            local card = Instance.new("Frame")
+            card.AnchorPoint = Vector2.new(0.5, 0.5)
+            card.Position = UDim2.fromScale(0.5, 0.5)
+            card.Size = UDim2.fromOffset(380, 200)
+            card.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+            card.BorderSizePixel = 0
+            card.ZIndex = 2
+            card.Parent = gui
+            Instance.new("UICorner", card).CornerRadius = UDim.new(0, 12)
+
+            local stroke = Instance.new("UIStroke")
+            stroke.Color = Color3.fromRGB(0, 200, 255)
+            stroke.Thickness = 1.5
+            stroke.Parent = card
+
+            local title = Instance.new("TextLabel")
+            title.BackgroundTransparency = 1
+            title.Size = UDim2.new(1, -24, 0, 36)
+            title.Position = UDim2.fromOffset(12, 14)
+            title.Font = Enum.Font.GothamBold
+            title.TextSize = 20
+            title.TextColor3 = Color3.fromRGB(255, 255, 255)
+            title.TextXAlignment = Enum.TextXAlignment.Left
+            title.Text = "Vertex.lol"
+            title.ZIndex = 3
+            title.Parent = card
+
+            local body = Instance.new("TextLabel")
+            body.BackgroundTransparency = 1
+            body.Size = UDim2.new(1, -24, 0, 70)
+            body.Position = UDim2.fromOffset(12, 54)
+            body.Font = Enum.Font.Gotham
+            body.TextSize = 14
+            body.TextColor3 = Color3.fromRGB(200, 200, 210)
+            body.TextWrapped = true
+            body.TextXAlignment = Enum.TextXAlignment.Left
+            body.TextYAlignment = Enum.TextYAlignment.Top
+            body.Text = "Join the Discord to continue.\nPress the button to copy the invite — menu stays locked until then."
+            body.ZIndex = 3
+            body.Parent = card
+
+            local btn = Instance.new("TextButton")
+            btn.AnchorPoint = Vector2.new(0.5, 1)
+            btn.Position = UDim2.new(0.5, 0, 1, -18)
+            btn.Size = UDim2.fromOffset(220, 40)
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 220)
+            btn.BorderSizePixel = 0
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 15
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Text = "Copy Discord"
+            btn.AutoButtonColor = true
+            btn.ZIndex = 4
+            btn.Parent = card
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 8)
+
+            local closed = false
+            local function markDone()
+                if closed then return end
+                closed = true
+                pcall(function()
+                    if getgenv then
+                        getgenv()[MARK_GENV] = true
+                        getgenv().VertexDiscordGateActive = false
+                    end
+                end)
+                pcall(function()
+                    if makefolder then makefolder("Vertex") end
+                    if writefile then writefile(MARK_FILE, "1") end
+                end)
+                pcall(function() gui:Destroy() end)
+                -- open menu after unlock
+                pcall(function()
+                    if Library.Toggled ~= true then
+                        Library:Toggle()
+                    end
+                end)
+            end
+
+            btn.MouseButton1Click:Connect(function()
+                local ok = pcall(function()
+                    if setclipboard then
+                        setclipboard(DISCORD_INVITE)
+                    elseif toclipboard then
+                        toclipboard(DISCORD_INVITE)
+                    end
+                end)
+                if ok then
+                    btn.Text = "Copied!"
+                    btn.BackgroundColor3 = Color3.fromRGB(40, 180, 90)
+                    task.delay(0.35, markDone)
+                else
+                    btn.Text = "Copy failed — try again"
+                end
+            end)
+
+            -- if something destroys the gui before copy, put it back
+            task.spawn(function()
+                while not closed do
+                    task.wait(0.4)
+                    if closed then break end
+                    if not gui.Parent then
+                        local skip = false
+                        pcall(function()
+                            if getgenv and getgenv()[MARK_GENV] == true then skip = true end
+                            if isfile and isfile(MARK_FILE) then skip = true end
+                        end)
+                        if skip then
+                            closed = true
+                            if getgenv then getgenv().VertexDiscordGateActive = false end
+                            break
+                        end
+                        gui.Parent = parent
+                    end
+                end
+            end)
+        end
+    end
     Library:Notify('Vertex loaded successfully!', 4)
     _G["\76\72"] = Library
