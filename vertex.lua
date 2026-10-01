@@ -17421,71 +17421,6 @@ end
             end
         end
 
-        local function installNoSpreadHook()
-            if not Rivals.Gun or type(Rivals.Gun.StartShooting) ~= "function" then
-                return false
-            end
-
-            local current = Rivals.Gun.StartShooting
-            if not gunModState.spreadHooked or current ~= gunModState.spreadWrapper then
-                gunModState.spreadBase = current
-            end
-
-            local base = gunModState.spreadBase
-            if type(base) ~= "function" then return false end
-
-            if setreadonly then pcall(setreadonly, Rivals.Gun, false) end
-
-            local wrapper
-            wrapper = function(controller, ...)
-                local a, b, c, d, e, f, g, h, i, j = base(controller, ...)
-
-                if Config.NoSpread then
-                    local ok, isLocal = pcall(function()
-                        return controller and controller.ClientFighter and controller.ClientFighter.IsLocalPlayer
-                    end)
-                    if ok and isLocal then
-                        d = true
-                    end
-                end
-
-                return a, b, c, d, e, f, g, h, i, j
-            end
-
-            if newcclosure then
-                wrapper = newcclosure(wrapper)
-            end
-
-            Rivals.Gun.StartShooting = wrapper
-            gunModState.spreadWrapper = wrapper
-            gunModState.spreadHooked = true
-            return true
-        end
-
-        task.spawn(function()
-            while true do
-                task.wait(0.35)
-                pcall(gunModsStep)
-                pcall(installNoSpreadHook)
-            end
-        end)
-
-        lp.CharacterAdded:Connect(function()
-            task.wait(0.6)
-            gunModState.spreadHooked = false
-            pcall(gunModsStep)
-            pcall(installNoSpreadHook)
-        end)
-
-        local prevHookGun = hookGunModule
-        hookGunModule = function(...)
-            if prevHookGun then pcall(prevHookGun, ...) end
-            gunModState.spreadHooked = false
-            task.defer(function()
-                pcall(installNoSpreadHook)
-            end)
-        end
-
         local gm = Tabs.Misc:AddRightGroupbox('gun mods')
 
         gm:AddToggle('GunNoRecoil', {
@@ -17497,18 +17432,6 @@ end
                 if not Config.NoRecoil then
                     pcall(restoreAllRecoil)
                 end
-                pcall(gunModsStep)
-            end
-        })
-
-        gm:AddToggle('GunNoSpread', {
-            Text = 'No spread',
-            Default = Config.NoSpread,
-            Tooltip = 'Keeps shots tight — bullets stay accurate instead of spraying',
-            Callback = function(v)
-                Config.NoSpread = v and true or false
-                gunModState.spreadHooked = false
-                pcall(installNoSpreadHook)
                 pcall(gunModsStep)
             end
         })
@@ -18723,5 +18646,5 @@ end
             end)
         end
     end
-    Library:Notify('Vertex loaded successfully!', 4)
+    Library:Notify('Vertex has been loaded successfully!', 4)
     _G["\76\72"] = Library
