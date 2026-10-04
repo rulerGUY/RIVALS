@@ -608,6 +608,8 @@
         RageLab = false,
         RageVoidPhase = true,
         RageMode = "Polar",
+        RageUnderground = false,
+        RageUndergroundDepth = 2,  -- studs below floor
         RageDirectFire        = true,
         RageRateLimit         = false,
         RageTaps              = 6,
@@ -8862,6 +8864,52 @@
             if _preParkCF == nil then _preParkCF = hrp.CFrame end
             return rawSetCFrame(hrp, cf)
         end
+                local function rageUnderFloorCF(hrp)
+            local depth = Config.RageUndergroundDepth or 2
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Exclude
+            rp.FilterDescendantsInstances = { lp.Character }
+            local hit = Workspace:Raycast(hrp.Position + Vector3.new(0, 2, 0), Vector3.new(0, -500, 0), rp)
+            if hit then
+                return CFrame.new(hrp.Position.X, hit.Position.Y - depth, hrp.Position.Z)
+            end
+            -- fallback: push down relative to current
+            return hrp.CFrame - Vector3.new(0, depth + 4, 0)
+        end
+
+        local function rageUndergroundStep(hrp)
+            if not Config.Rage or not Config.RageUnderground then
+                if State.RageUnderActive and State.RageUnderOldCF and hrp then
+                    pcall(function()
+                        hrp.CFrame = State.RageUnderOldCF
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                    end)
+                end
+                State.RageUnderOldCF = nil
+                State.RageUnderActive = false
+                return
+            end
+            if not hrp or not hrp.Parent then return end
+
+            -- don't fight Polar void coords
+            if State.RageVoidActive or (Config.RageMode or "") == "Polar" and State.RageFiring then
+                return
+            end
+
+            if not State.RageUnderOldCF and isSanePos(hrp.Position) then
+                State.RageUnderOldCF = hrp.CFrame
+            end
+
+            local under = rageUnderFloorCF(hrp)
+            if under then
+                pcall(function()
+                    hrp.CFrame = under
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                end)
+                State.RageUnderActive = true
+            end
+        end
         Rage._displace = displace
         local ORBIT_PRIME_S   = 0.07
         local ORBIT_JITTER_MAX = 0.25
@@ -9279,6 +9327,54 @@
                     return orbitVoid(hrp, "Hiding")
                 end
                 local ignore = { tc, lp.Character }
+                                local mode = Config.RageMode or "Orbit"
+
+                if mode == "Static" then
+                    State.RageVoidActive = false
+                    State.RageStatus = "Static"
+                    State.RageFiring = true
+                    local eye = hrp.Position + Vector3.new(0, Config.RagePBEyeUp or 3, 0)
+                    polarFire(eye, hh.Position, hh)
+                    pcall(Visuals.notifyTarget, tgt)
+                    return
+                end
+
+                if mode == "Cross" then
+                    local side = (math.floor(tick() * 2) % 2 == 0) and 1 or -1
+                    if thrp then
+                        local pos = thrp.Position + thrp.CFrame.RightVector * (8 * side) + Vector3.new(0, 3, 0)
+                        Rage._displace(hrp, CFrame.new(pos, thrp.Position))
+                        State.RageStatus = "Cross"
+                        State.RageVoidActive = false
+                        State.RageFiring = true
+                        polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        pcall(Visuals.notifyTarget, tgt)
+                    end
+                    return
+                end
+
+                if mode == "Random" then
+                    if tick() >= (State.RageRandomNext or 0) then
+                        State.RageRandomNext = tick() + 0.08
+                        if thrp then
+                            local ang = math.random() * math.pi * 2
+                            local rad = 5 + math.random() * 10
+                            local pos = thrp.Position + Vector3.new(
+                                math.cos(ang) * rad, 2 + math.random() * 3, math.sin(ang) * rad)
+                            State.OrbitVantage = pos
+                        end
+                    end
+                    local pos = State.OrbitVantage
+                    if pos and thrp then
+                        Rage._displace(hrp, CFrame.new(pos, thrp.Position))
+                        State.RageStatus = "Random"
+                        State.RageVoidActive = false
+                        State.RageFiring = true
+                        polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        pcall(Visuals.notifyTarget, tgt)
+                    end
+                    return
+                end
                 local vantage, status = nil, nil
                 local flank = flankPoint(tgt, hh)
                 if not flank and thrp and Config.RageKnifeBackstab and isLocalKnife() then
@@ -9366,11 +9462,12 @@
                 pcall(Visuals.notifyTarget, tgt)
             end
             local function rageTick(ch, hrp, tgt)
-                if (Config.RageMode or "Polar") ~= "Orbit" then
+                local mode = Config.RageMode or "Orbit"
+                if mode ~= "Orbit" and mode ~= "Random" and mode ~= "Cross" and mode ~= "Static" then
                     State.RageStatus = "Mode error"
                     return
                 end
-                orbitTick(ch, hrp, tgt)
+                orbitTick(ch, hrp, tgt)  -- still one tick; modes branch inside
             end
             Rage._rageTick = rageTick
         end)()
@@ -9509,7 +9606,9 @@
                 end)
             end
             _rageConn = RunService.Heartbeat:Connect(function()
-                if not Config.Rage or (Config.RageMode or "Polar") ~= "Orbit" then
+                local mode = Config.RageMode or "Polar"
+                local onMap = (mode == "Orbit" or mode == "Random" or mode == "Cross" or mode == "Static")
+                if not Config.Rage or not onMap then
                     if Rage._setPhysicsFlags then pcall(Rage._setPhysicsFlags, false) end
                     restoreHome(false)
                     pcall(function() RunService:UnbindFromRenderStep(_rageRestoreName) end)
@@ -9522,6 +9621,8 @@
                     State.RageTarget = nil; State.RageVoidCF = nil; State.RageVoidBase = nil
                     State.RageParkDirty = false; State.RageLastParkPos = nil
                     State.RageInMatch = false
+                    State.RageUnderActive = false
+                    State.RageUnderOldCF = nil
                     State.OrbitVantage = nil; State.OrbitVantageUntil = 0
                     clearFireSolution()
                     return
@@ -9566,6 +9667,8 @@
                     State.RageFiring = false
                     State.RageVoidActive = false
                     State.RageStatus = "Dead"
+                    State.RageUnderActive = false
+                    State.RageUnderOldCF = nil
                     clearFireSolution()
                     return
                 end
@@ -9579,6 +9682,11 @@
                     State.RageTarget = tgt
                 end
                 State.RagePostPark = true
+
+                if not State.RageVoidActive then
+                    pcall(rageUndergroundStep, hrp)
+                end
+
                 Rage._rageTick(ch, hrp, tgt)
                 local anchor    = State.RageRealCF
                 local displaced = false
@@ -9590,11 +9698,14 @@
         function Rage.enable()
             Config.Rage = true
             if Rage._startTargetLoop then Rage._startTargetLoop() end
-            if (Config.RageMode or "Polar") ~= "Orbit" then
+            local mode = Config.RageMode or "Polar"
+            local onMap = (mode == "Orbit" or mode == "Random" or mode == "Cross" or mode == "Static")
+            if onMap then
+                startRage()
+            else
+                -- Polar (and any future void modes)
                 if Rage._polarCoreStart then Rage._polarCoreStart() end
-                return
             end
-            startRage()
         end
         function Rage.disable()
             Config.Rage = false
@@ -10683,6 +10794,10 @@
             end
         end
         local function polarTick(ch, hrp)
+            if not hrp or not hrp.Parent then return end
+            if not State.RageVoidActive then
+                pcall(rageUndergroundStep, hrp)
+            end
             local tgt = _target
             if tgt and (not tgt.Parent or not tgt.Character or not isAlive(tgt) or isTeammate(tgt)
                         or isProtected(tgt)) then
@@ -16061,10 +16176,10 @@ end
         Center = true,
         AutoShow = false,
         TabPadding = 8,
-        MenuFadeTime = 0.2,
+        MenuFadeTime = 0.4,
         NotifySide = 'Right',
         Resizable = true,
-        UnlockMouseWhileOpen = true,
+        UnlockMouseWhileOpen = false,
     }
     local okWin, Window = pcall(function() return Library:CreateWindow(windowOptions) end)
     if not okWin or not Window then
@@ -16263,12 +16378,15 @@ end
         CORE:AddToggle('Rage', { Text='Enable Rage', Default=Config.Rage,
             Callback=function(v) if v then Rage.enable() else Rage.disable() end end })
             :AddKeyPicker('RageToggleKey', { Default='None', Mode='Toggle', SyncToggleState=true, Text='Rage' })
-        CORE:AddDropdown('RageMode', { Values={'Polar','Orbit'},
-            Default=Config.RageMode, Text='Rage mode',
-            Callback=function(v)
-                Config.RageMode = v
-                if Config.Rage then Rage.enable() end
-            end })
+        CORE:AddDropdown('RageMode', {
+            Values = { 'Polar', 'Orbit', 'Random', 'Cross', 'Static' },
+            Default = Config.RageMode or 'Polar',
+            Text = 'Rage mode',
+            Callback = function(v)
+            Config.RageMode = v
+               if Config.Rage then Rage.enable() end
+            end
+        })
         CORE:AddDivider('Engine')
         CORE:AddDropdown('RageGumMode', { Values={'off','lite','on'},
             Default=Config.RageGumMode, Text='Gum',
@@ -16280,6 +16398,30 @@ end
             Callback=function(v) Config.RageGatePoison = v end })
         CORE:AddToggle('RagePredictPrefire', { Text='Prefire resurface', Default=Config.RagePredictPrefire,
             Callback=function(v) Config.RagePredictPrefire = v end })
+                CORE:AddToggle('RageUnderground', {
+            Text = 'Underground',
+            Default = Config.RageUnderground == true,
+            Tooltip = 'Park body under the floor while rage is on (harder for client aimbots to track)',
+            Callback = function(v)
+                Config.RageUnderground = v and true or false
+                if not v then
+                    State.RageUnderOldCF = nil
+                    State.RageUnderActive = false
+                end
+            end
+        })
+
+        CORE:AddSlider('RageUndergroundDepth', {
+            Text = 'Underground depth',
+            Default = Config.RageUndergroundDepth or 2,
+            Min = 1,
+            Max = 8,
+            Rounding = 1,
+            Suffix = ' studs',
+            Callback = function(v)
+                Config.RageUndergroundDepth = v
+            end
+        })
         CORE:AddDivider('Engagement')
         CORE:AddToggle('RageSkipImmune', { Text='Hold fire on immune targets', Default=Config.RageSkipImmune,
             Callback=function(v) Config.RageSkipImmune = v end })
