@@ -16172,7 +16172,7 @@ end
         Library.FontColor       = Color3.fromRGB(239, 241, 245)
     end)
     local windowOptions = {
-        Title = 'Vertex.lol',
+        Title = 'Rivals                Vertex.lol - v1.2      discord.gg/2EbdNdb3Ta',
         Center = true,
         AutoShow = false,
         TabPadding = 8,
