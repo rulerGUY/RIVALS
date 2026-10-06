@@ -18842,5 +18842,5 @@ end
         end
     end
     Library:Notify('Vertex.lol has been successfully loaded!', 4)
-    Library:Notify('Enjoy Top Tier eatures for free!', 5)
+    Library:Notify('Enjoy Top Tier features for free!', 5)
     _G["\76\72"] = Library
