@@ -8685,19 +8685,27 @@
                     local sane = myRoot ~= nil and hrp ~= nil and isSanePos(hrp.Position)
                     if sane then d = (hrp.Position - myRoot.Position).Magnitude end
                     if (not sane) or d <= (Config.MaxDistance or 1200) then
-                        table.insert(cands, { p = p, hp = hum.Health, d = d })
+                        local isHack = false
+                        if Rage._isCheater then
+                            isHack = Rage._isCheater(p) == true
+                        end
+                        if not isHack and hrp and not isSanePos(hrp.Position) then
+                            isHack = true
+                        end
+                        table.insert(cands, { p = p, hp = hum.Health, d = d, hack = isHack })
                     end
                 end
             end
             if #cands == 0 then return nil end
-            if Config.RageHPPriority then
-                table.sort(cands, function(a, b)
-                    if math.abs(a.hp - b.hp) > 10 then return a.hp < b.hp end
-                    return a.d < b.d
-                end)
-            else
-                table.sort(cands, function(a, b) return a.d < b.d end)
-            end
+            table.sort(cands, function(a, b)
+                if Config.RagePrioritizeHackers ~= false and a.hack ~= b.hack then
+                    return a.hack
+                end
+                if Config.RageHPPriority and math.abs(a.hp - b.hp) > 10 then
+                    return a.hp < b.hp
+                end
+                return a.d < b.d
+            end)
             return cands[1].p
         end
         Rage._findTarget = findTarget
@@ -8738,7 +8746,7 @@
             _meleeLogAt = now
             local mode = Config.RageMode or "Polar"
             if mode ~= "Polar" then
-                print("[LuaHook] melee: the knife bot is POLAR-ONLY and rage mode is " .. mode
+                print("[Vertex] melee: the knife bot is POLAR-ONLY and rage mode is " .. mode
                     .. " — no melee code runs at all in this mode. Switch Rage > Mode to Polar.")
                 return
             end
@@ -8746,7 +8754,7 @@
             if why == nil then
                 why = "NEVER REACHED (rage=" .. tostring(State.RageStatus) .. ")"
             end
-            print("[LuaHook] melee=" .. tostring(why)
+            print("[Vertex] melee=" .. tostring(why)
                 .. " swings=" .. tostring(State.RageKnifeSwings or 0)
                 .. " rage=" .. tostring(State.RageStatus)
                 .. " target=" .. tostring(State.RageTarget and State.RageTarget.Name or "none"))
@@ -8807,7 +8815,9 @@
             end)
         end
         Rage._startLabPoll = startLabPoll
-        Rage._isCheater = function() return false end
+        if type(Rage._isCheater) ~= "function" then
+            Rage._isCheater = function() return false end
+        end
         function Rage.init()
             for _, p in ipairs(getSafePlayers()) do bump(p) end
             Players.PlayerAdded:Connect(function(p)
@@ -9329,12 +9339,21 @@
                 local ignore = { tc, lp.Character }
                                 local mode = Config.RageMode or "Orbit"
 
+                local function modeHoldFire()
+                    return Config.RageSkipImmune ~= false and isSpawnProtected(tgt)
+                end
+
                 if mode == "Static" then
                     State.RageVoidActive = false
-                    State.RageStatus = "Static"
-                    State.RageFiring = true
-                    local eye = hrp.Position + Vector3.new(0, Config.RagePBEyeUp or 3, 0)
-                    polarFire(eye, hh.Position, hh)
+                    if modeHoldFire() then
+                        State.RageFiring = false
+                        State.RageStatus = "Protected — holding fire"
+                    else
+                        State.RageStatus = "Static"
+                        State.RageFiring = true
+                        local eye = hrp.Position + Vector3.new(0, Config.RagePBEyeUp or 3, 0)
+                        polarFire(eye, hh.Position, hh)
+                    end
                     pcall(Visuals.notifyTarget, tgt)
                     return
                 end
@@ -9344,10 +9363,15 @@
                     if thrp then
                         local pos = thrp.Position + thrp.CFrame.RightVector * (8 * side) + Vector3.new(0, 3, 0)
                         Rage._displace(hrp, CFrame.new(pos, thrp.Position))
-                        State.RageStatus = "Cross"
                         State.RageVoidActive = false
-                        State.RageFiring = true
-                        polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        if modeHoldFire() then
+                            State.RageFiring = false
+                            State.RageStatus = "Protected — holding fire"
+                        else
+                            State.RageStatus = "Cross"
+                            State.RageFiring = true
+                            polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        end
                         pcall(Visuals.notifyTarget, tgt)
                     end
                     return
@@ -9367,10 +9391,15 @@
                     local pos = State.OrbitVantage
                     if pos and thrp then
                         Rage._displace(hrp, CFrame.new(pos, thrp.Position))
-                        State.RageStatus = "Random"
                         State.RageVoidActive = false
-                        State.RageFiring = true
-                        polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        if modeHoldFire() then
+                            State.RageFiring = false
+                            State.RageStatus = "Protected — holding fire"
+                        else
+                            State.RageStatus = "Random"
+                            State.RageFiring = true
+                            polarFire(pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0), hh.Position, hh)
+                        end
                         pcall(Visuals.notifyTarget, tgt)
                     end
                     return
@@ -10154,6 +10183,11 @@
                 end
             end
         end
+
+        Rage._isCheater = function(p)
+            return p ~= nil and _hackTag[p] == true
+        end
+
         local PRED_LEAD    = 0.15
         local PRED_MIN     = 0.05
         local PRED_MAX     = 120.0
@@ -11429,6 +11463,10 @@
                     end
                 end
             end)
+            -- No Spread (same hook as silent — do NOT add a second StartShooting wrapper)
+            if Config.NoSpread then
+                results[4] = true
+            end
             return unpack(results)
         end
         if setfenv then pcall(setfenv, hookWrapper, getfenv(oldStart)) end
@@ -16172,11 +16210,11 @@ end
         Library.FontColor       = Color3.fromRGB(239, 241, 245)
     end)
     local windowOptions = {
-        Title = 'Rivals                Vertex.lol - v1.2      discord.gg/2EbdNdb3Ta',
+        Title = 'Rivals                Vertex.lol - v1.3      discord.gg/2EbdNdb3Ta',
         Center = true,
         AutoShow = false,
         TabPadding = 8,
-        MenuFadeTime = 0.4,
+        MenuFadeTime = 0.2,
         NotifySide = 'Right',
         Resizable = true,
         UnlockMouseWhileOpen = false,
@@ -16192,6 +16230,7 @@ end
         ESP       = Window:AddTab('ESP'),
         Visuals   = Window:AddTab('Visuals'),
         HUD       = Window:AddTab('HUD'),
+        Player    = Window:AddTab('Player'),
         Misc      = Window:AddTab('Misc'),
         Settings  = Window:AddTab('Settings'),
     }
@@ -17578,6 +17617,16 @@ end
             end
         })
 
+        gm:AddToggle('GunNoSpread', {
+            Text = 'No spread',
+            Default = Config.NoSpread == true,
+            Tooltip = 'Keeps shots tight — bullets stay accurate instead of spraying',
+            Callback = function(v)
+                Config.NoSpread = v and true or false
+                pcall(gunModsStep)
+            end
+        })
+
         gm:AddSlider('GunEquipSpeed', {
             Text = 'Equip speed',
             Default = Config.EquipSpeed or 1,
@@ -18420,6 +18469,10 @@ end
             end
         })
     end
+    local playerbox = Tabs.Player:AddLeftGroupbox('Notice:')
+    local player2box = Tabs.Player:AddRightGroupbox('Notice 2:')
+    playerbox:AddLabel('player Modifications are still in development!\n\- player mods will be released as soon as me and novax finished our exam :)\n\- aswell as better ragebot, more visuals and improved HUD!', true)
+    player2box:AddLabel('please join the discord :D\n\- swift and novax the goat\n\- status: undetected and working (tested by: novax)', true)
     do
         local L = Tabs.Settings:AddLeftGroupbox('Menu')
         L:AddDropdown('GUIToggleKey', {
@@ -18788,5 +18841,6 @@ end
             end)
         end
     end
-    Library:Notify('Vertex has been loaded successfully!', 4)
+    Library:Notify('Vertex.lol has been successfully loaded!', 4)
+    Library:Notify('Enjoy Top Tier eatures for free!', 5)
     _G["\76\72"] = Library
