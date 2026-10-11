@@ -16210,11 +16210,11 @@ end
         Library.FontColor       = Color3.fromRGB(239, 241, 245)
     end)
     local windowOptions = {
-        Title = 'Rivals                Vertex.lol - v1.3      discord.gg/2EbdNdb3Ta',
+        Title = 'Rivals                Vertex.lol - v1.4      discord.gg/2EbdNdb3Ta',
         Center = true,
         AutoShow = false,
         TabPadding = 8,
-        MenuFadeTime = 0.2,
+        MenuFadeTime = 0.3,
         NotifySide = 'Right',
         Resizable = true,
         UnlockMouseWhileOpen = false,
@@ -16256,43 +16256,381 @@ end
             end)
         end
     end
+    local INSTANCE_GAMEPLAY_OVERLAY_ORDER = 100
+
+local fovScreenGui = Instance.new("ScreenGui")
+fovScreenGui.Name = "VertexCombatFOV"
+fovScreenGui.DisplayOrder = INSTANCE_GAMEPLAY_OVERLAY_ORDER
+fovScreenGui.ResetOnSpawn = false
+fovScreenGui.IgnoreGuiInset = true
+fovScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function()
+    fovScreenGui.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+end)
+
+local function buildfov(name, cfg)
+    local container = Instance.new("Frame")
+    container.Name = name
+    container.BackgroundTransparency = 1
+    container.BorderSizePixel = 0
+    container.Visible = false
+    container.Parent = fovScreenGui
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new(1, 0, 1, 0)
+    fill.BackgroundColor3 = Color3.new(1, 1, 1)
+    fill.BackgroundTransparency = cfg.FilledTransparency
+    fill.BorderSizePixel = 0
+    fill.Visible = false
+    fill.ZIndex = 1
+    fill.Parent = container
+    Instance.new("UICorner", fill).CornerRadius = UDim.new(1, 0)
+
+    local fillgrad = Instance.new("UIGradient")
+    fillgrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, cfg.FilledColor1),
+        ColorSequenceKeypoint.new(1, cfg.FilledColor2),
+    })
+    fillgrad.Rotation = cfg.FilledRotation
+    fillgrad.Parent = fill
+
+    local outline = Instance.new("Frame")
+    outline.Size = UDim2.new(1, 0, 1, 0)
+    outline.BackgroundTransparency = 1
+    outline.BorderSizePixel = 0
+    outline.ZIndex = 2
+    outline.Parent = container
+    Instance.new("UICorner", outline).CornerRadius = UDim.new(1, 0)
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.new(1, 1, 1)
+    stroke.Thickness = cfg.OutlineThickness
+    stroke.Transparency = cfg.OutlineTransparency
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = outline
+
+    local strokegrad = Instance.new("UIGradient")
+    strokegrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, cfg.OutlineColor1),
+        ColorSequenceKeypoint.new(1, cfg.OutlineColor2),
+    })
+    strokegrad.Rotation = cfg.OutlineRotation
+    strokegrad.Parent = stroke
+
+    return {
+        container = container,
+        fill = fill,
+        fillgrad = fillgrad,
+        stroke = stroke,
+        strokegrad = strokegrad,
+    }
+end
+
+local silentFOVCfg = {
+    OutlineColor1 = Color3.fromRGB(255, 255, 255),
+    OutlineColor2 = Color3.fromRGB(255, 255, 255),
+    OutlineRotation = 0,
+    OutlineThickness = 1.5,
+    OutlineTransparency = 0,
+    FilledEnabled = false,
+    FilledColor1 = Color3.fromRGB(255, 255, 255),
+    FilledColor2 = Color3.fromRGB(0, 0, 0),
+    FilledRotation = 0,
+    FilledTransparency = 0.7,
+    FilledAnimated = false,
+    FilledSpeed = 1,
+    SpinOn = false,
+    SpinSpd = 1,
+}
+
+local aimbotFOVCfg = {
+    OutlineColor1 = Color3.fromRGB(255, 255, 255),
+    OutlineColor2 = Color3.fromRGB(255, 255, 255),
+    OutlineRotation = 0,
+    OutlineThickness = 1.5,
+    OutlineTransparency = 0,
+    FilledEnabled = false,
+    FilledColor1 = Color3.fromRGB(255, 255, 255),
+    FilledColor2 = Color3.fromRGB(0, 0, 0),
+    FilledRotation = 0,
+    FilledTransparency = 0.7,
+    FilledAnimated = false,
+    FilledSpeed = 1,
+    SpinOn = false,
+    SpinSpd = 1,
+}
+
+local triggerFOVCfg = {
+    OutlineColor1 = Color3.fromRGB(255, 180, 50),
+    OutlineColor2 = Color3.fromRGB(255, 180, 50),
+    OutlineRotation = 0,
+    OutlineThickness = 1.5,
+    OutlineTransparency = 0,
+    FilledEnabled = false,
+    FilledColor1 = Color3.fromRGB(255, 180, 50),
+    FilledColor2 = Color3.fromRGB(0, 0, 0),
+    FilledRotation = 0,
+    FilledTransparency = 0.7,
+    FilledAnimated = false,
+    FilledSpeed = 1,
+    SpinOn = false,
+    SpinSpd = 1,
+}
+
+local sFOV = buildfov("SilentFOV", silentFOVCfg)
+local silentFOVContainer, silentFOVFill = sFOV.container, sFOV.fill
+local silentFOVFillGrad, silentFOVStroke, silentFOVStrokeGrad =
+    sFOV.fillgrad, sFOV.stroke, sFOV.strokegrad
+
+local aFOV = buildfov("AimbotFOV", aimbotFOVCfg)
+local aimbotFOVContainer, aimbotFOVFill = aFOV.container, aFOV.fill
+local aimbotFOVFillGrad, aimbotFOVStroke, aimbotFOVStrokeGrad =
+    aFOV.fillgrad, aFOV.stroke, aFOV.strokegrad
+
+local tFOV = buildfov("TriggerFOV", triggerFOVCfg)
+local triggerFOVContainer = tFOV.container
+local triggerFOVFill = tFOV.fill
+local triggerFOVFillGrad = tFOV.fillgrad
+local triggerFOVStroke = tFOV.stroke
+local triggerFOVStrokeGrad = tFOV.strokegrad
+
+Config.TriggerShowFOV = Config.TriggerShowFOV == true
+Config.TriggerFOV = tonumber(Config.TriggerFOV) or 120
+
+local function silentlinegrad()
+    silentFOVStrokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, silentFOVCfg.OutlineColor1),
+        ColorSequenceKeypoint.new(1, silentFOVCfg.OutlineColor2),
+    })
+end
+local function updsilentgrad()
+    silentFOVFillGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, silentFOVCfg.FilledColor1),
+        ColorSequenceKeypoint.new(1, silentFOVCfg.FilledColor2),
+    })
+end
+local function updaimbotoutlinegrad()
+    aimbotFOVStrokeGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, aimbotFOVCfg.OutlineColor1),
+        ColorSequenceKeypoint.new(1, aimbotFOVCfg.OutlineColor2),
+    })
+end
+local function updaimbotfillgrad()
+    aimbotFOVFillGrad.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, aimbotFOVCfg.FilledColor1),
+        ColorSequenceKeypoint.new(1, aimbotFOVCfg.FilledColor2),
+    })
+end
+local function screenCenter()
+    local vp = Camera.ViewportSize
+    return Vector2.new(vp.X * 0.5, vp.Y * 0.5)
+end
+
+-- optional follow-muzzle: plug your muzzle world→screen here
+local function silentfovcenter()
+    return screenCenter()
+end
+local function aimbotfovcenter()
+    return screenCenter()
+end
+
+-- map AimbotFOVDeg → pixels if you keep deg in new Vertex
+local function aimbotRadiusPixels()
+    if Config.AimbotFOVDeg then
+        -- reuse your existing fovPixels() if you have it
+        if fovPixels then return fovPixels(Config.AimbotFOVDeg or 20) end
+        local deg = math.clamp(Config.AimbotFOVDeg or 20, 0.1, 89)
+        local vp = Camera.ViewportSize
+        return (vp.Y * 0.5) * math.tan(math.rad(deg)) / math.tan(math.rad(Camera.FieldOfView * 0.5))
+    end
+    return Config.SilentAimFOV or 250 -- fallback
+end
+
+RunService.RenderStepped:Connect(function()
+    local showSilent  = silentFOVContainer.Visible
+    local showAimbot  = aimbotFOVContainer.Visible
+    local showTrigger = triggerFOVContainer.Visible
+    if not showSilent and not showAimbot and not showTrigger then return end
+
+    if showSilent then
+        local c = silentfovcenter()
+        local r = Config.SilentAimFOV or 100
+        silentFOVContainer.Size = UDim2.fromOffset(r * 2, r * 2)
+        silentFOVContainer.Position = UDim2.fromOffset(c.X - r, c.Y - r)
+        if silentFOVCfg.FilledAnimated then
+            silentFOVFillGrad.Rotation = math.sin(tick() * silentFOVCfg.FilledSpeed) * 180 + silentFOVCfg.FilledRotation
+        elseif silentFOVCfg.SpinOn then
+            silentFOVFillGrad.Rotation = silentFOVCfg.FilledRotation + (tick() * silentFOVCfg.SpinSpd * 90) % 360
+        end
+        if silentFOVCfg.SpinOn then
+            silentFOVStrokeGrad.Rotation = silentFOVCfg.OutlineRotation + (tick() * silentFOVCfg.SpinSpd * 90) % 360
+        end
+    end
+
+    if showAimbot then
+        local c = aimbotfovcenter()
+        local r = aimbotRadiusPixels()
+        aimbotFOVContainer.Size = UDim2.fromOffset(r * 2, r * 2)
+        aimbotFOVContainer.Position = UDim2.fromOffset(c.X - r, c.Y - r)
+        if aimbotFOVCfg.FilledAnimated then
+            aimbotFOVFillGrad.Rotation = math.sin(tick() * aimbotFOVCfg.FilledSpeed) * 180 + aimbotFOVCfg.FilledRotation
+        elseif aimbotFOVCfg.SpinOn then
+            aimbotFOVFillGrad.Rotation = aimbotFOVCfg.FilledRotation + (tick() * aimbotFOVCfg.SpinSpd * 90) % 360
+        end
+        if aimbotFOVCfg.SpinOn then
+            aimbotFOVStrokeGrad.Rotation = aimbotFOVCfg.OutlineRotation + (tick() * aimbotFOVCfg.SpinSpd * 90) % 360
+        end
+    end
+
+    if showTrigger then
+    local c = screenCenter()
+    local r = Config.TriggerFOV or 120
+    triggerFOVContainer.Size = UDim2.fromOffset(r * 2, r * 2)
+    triggerFOVContainer.Position = UDim2.fromOffset(c.X - r, c.Y - r)
+
+    if triggerFOVCfg.FilledAnimated then
+        triggerFOVFillGrad.Rotation =
+            math.sin(tick() * triggerFOVCfg.FilledSpeed) * 180 + triggerFOVCfg.FilledRotation
+    elseif triggerFOVCfg.SpinOn then
+        triggerFOVFillGrad.Rotation =
+            triggerFOVCfg.FilledRotation + (tick() * triggerFOVCfg.SpinSpd * 90) % 360
+    end
+    if triggerFOVCfg.SpinOn then
+        triggerFOVStrokeGrad.Rotation =
+            triggerFOVCfg.OutlineRotation + (tick() * triggerFOVCfg.SpinSpd * 90) % 360
+    end
+end
+end)
     do
-        local L = Tabs.Combat:AddLeftGroupbox('Silent Aim')
-        L:AddToggle('SilentAim', { Text='Silent Aim', Default=Config.SilentAim,
+        local SA = Tabs.Combat:AddLeftTabbox('Silent Aim')
+        local silenttab = SA:AddTab('Core')
+        local silentcustomization = SA:AddTab('Visuals')
+        silenttab:AddToggle('SilentAim', { Text='Silent Aim', Default=Config.SilentAim,
             Callback=function(v) Config.SilentAim = v end })
             :AddKeyPicker('SilentAimKey', { Default='None', Mode='Toggle', SyncToggleState=true, Text='Silent Aim' })
-        L:AddToggle('SilentAimVisCheck', { Text='Visibility check', Default=Config.SilentAimVisCheck,
+        silenttab:AddToggle('SilentAimVisCheck', { Text='Visibility check', Default=Config.SilentAimVisCheck,
             Callback=function(v) Config.SilentAimVisCheck = v end })
-        L:AddToggle('SilentAimJitter', { Text='Hit randomization', Default=Config.SilentAimJitter,
+        silenttab:AddToggle('SilentAimJitter', { Text='Hit randomization', Default=Config.SilentAimJitter,
             Callback=function(v) Config.SilentAimJitter = v end })
-        L:AddSlider('SilentAimFOV', { Text='FOV radius', Default=Config.SilentAimFOV,
-            Min=20, Max=2000, Rounding=0, Callback=function(v) Config.SilentAimFOV = v end })
-        L:AddDropdown('SilentAimTargetPart', { Values={'Head','Torso','Closest'},
+        silenttab:AddDropdown('SilentAimTargetPart', { Values={'Head','Torso','Closest'},
             Default=Config.SilentAimTargetPart, Text='Target bone',
             Callback=function(v) Config.SilentAimTargetPart = v end })
-        L:AddSlider('SilentAimStickiness', { Text='Stickiness', Default=Config.SilentAimStickiness,
+        silenttab:AddSlider('SilentAimStickiness', { Text='Stickiness', Default=Config.SilentAimStickiness,
             Min=0, Max=0.5, Rounding=2,
             Callback=function(v) Config.SilentAimStickiness = v end })
-        L:AddToggle('SilentAimMultipoint', { Text='Multipoint', Default=Config.SilentAimMultipoint,
+        silenttab:AddToggle('SilentAimMultipoint', { Text='Multipoint', Default=Config.SilentAimMultipoint,
             Callback=function(v) Config.SilentAimMultipoint = v end })
-        local smpDep = L:AddDependencyBox()
+        local smpDep = silenttab:AddDependencyBox()
         smpDep:AddSlider('SilentAimMultipointCount', { Text='Multipoint samples',
             Default=Config.SilentAimMultipointCount, Min=1, Max=12, Rounding=0,
             Callback=function(v) Config.SilentAimMultipointCount = math.floor(v) end })
         smpDep:SetupDependencies({ { Toggles.SilentAimMultipoint, true } })
-        L:AddToggle('SilentAimTorsoFallback', { Text='Torso fallback', Default=Config.SilentAimTorsoFallback,
+        silenttab:AddToggle('SilentAimTorsoFallback', { Text='Torso fallback', Default=Config.SilentAimTorsoFallback,
             Callback=function(v) Config.SilentAimTorsoFallback = v end })
-        L:AddDivider('De-blend')
-        L:AddSlider('SilentAimHitChance', { Text='Hit chance %', Default=Config.SilentAimHitChance,
+        silenttab:AddDivider('De-blend')
+        silenttab:AddSlider('SilentAimHitChance', { Text='Hit chance %', Default=Config.SilentAimHitChance,
             Min=25, Max=100, Rounding=0,
             Callback=function(v) Config.SilentAimHitChance = math.floor(v) end })
-        L:AddSlider('SilentAimBodyMix', { Text='Body mix %', Default=Config.SilentAimBodyMix,
+        silenttab:AddSlider('SilentAimBodyMix', { Text='Body mix %', Default=Config.SilentAimBodyMix,
             Min=0, Max=100, Rounding=0,
             Callback=function(v) Config.SilentAimBodyMix = math.floor(v) end })
-        L:AddSlider('SilentAimJitterDeg', { Text='Jitter cone (deg)', Default=Config.SilentAimJitterDeg,
+        silenttab:AddSlider('SilentAimJitterDeg', { Text='Jitter cone (deg)', Default=Config.SilentAimJitterDeg,
             Min=0, Max=10, Rounding=1,
             Callback=function(v) Config.SilentAimJitterDeg = v end })
-        local TB = Tabs.Combat:AddRightGroupbox('Trigger bot')
+        silentcustomization:AddToggle("ShowFOV", {
+    Text = "show fov", Default = false,
+    Callback = function(val) silentFOVContainer.Visible = val end
+}):AddColorPicker("FOVOutlineColor1", {
+    Default = Color3.fromRGB(255, 255, 255), Title = "outline color 1",
+    Callback = function(val) silentFOVCfg.OutlineColor1 = val; silentlinegrad() end
+}):AddColorPicker("FOVOutlineColor2", {
+    Default = Color3.fromRGB(255, 255, 255), Title = "outline color 2",
+    Callback = function(val) silentFOVCfg.OutlineColor2 = val; silentlinegrad() end
+})
+
+silentcustomization:AddToggle("SilentFOVFilled", {
+    Text = "fov fill", Default = false,
+    Callback = function(val)
+        silentFOVCfg.FilledEnabled = val
+        silentFOVFill.Visible = val
+    end
+}):AddColorPicker("SilentFOVFillColor1", {
+    Default = Color3.fromRGB(255, 255, 255), Title = "fill color 1",
+    Callback = function(val) silentFOVCfg.FilledColor1 = val; updsilentgrad() end
+}):AddColorPicker("SilentFOVFillColor2", {
+    Default = Color3.fromRGB(0, 0, 0), Title = "fill color 2",
+    Callback = function(val) silentFOVCfg.FilledColor2 = val; updsilentgrad() end
+})
+
+silentcustomization:AddToggle("SilentFOVFillAnimated", {
+    Text = "animated fill", Default = false,
+    Callback = function(val)
+        silentFOVCfg.FilledAnimated = val
+        if not val then silentFOVFillGrad.Rotation = silentFOVCfg.FilledRotation end
+    end
+})
+
+silentcustomization:AddSlider('SilentAimFOV', { Text='FOV radius', Default=Config.SilentAimFOV,
+            Min=20, Max=2000, Rounding=0, Callback=function(v) Config.SilentAimFOV = v end })
+
+silentcustomization:AddSlider("SilentFOVOutlineThickness", {
+    Text = "outline thickness", Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
+    Callback = function(val)
+        silentFOVCfg.OutlineThickness = val
+        silentFOVStroke.Thickness = val
+    end
+})
+silentcustomization:AddSlider("SilentFOVOutlineTransparency", {
+    Text = "outline transparency", Default = 0, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        silentFOVCfg.OutlineTransparency = val
+        silentFOVStroke.Transparency = val
+    end
+})
+silentcustomization:AddSlider("SilentFOVOutlineRotation", {
+    Text = "outline rotation", Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        silentFOVCfg.OutlineRotation = val
+        silentFOVStrokeGrad.Rotation = val
+    end
+})
+silentcustomization:AddSlider("SilentFOVFillTransparency", {
+    Text = "fill transparency", Default = 0.7, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        silentFOVCfg.FilledTransparency = val
+        silentFOVFill.BackgroundTransparency = val
+    end
+})
+silentcustomization:AddSlider("SilentFOVFillRotation", {
+    Text = "fill rotation", Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        silentFOVCfg.FilledRotation = val
+        if not silentFOVCfg.FilledAnimated then silentFOVFillGrad.Rotation = val end
+    end
+})
+silentcustomization:AddSlider("SilentFOVFillSpeed", {
+    Text = "fill anim speed", Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) silentFOVCfg.FilledSpeed = val end
+})
+silentcustomization:AddToggle("SilentFOVSpin", {
+    Text = "spin", Default = false,
+    Callback = function(val)
+        silentFOVCfg.SpinOn = val
+        if not val then
+            silentFOVStrokeGrad.Rotation = silentFOVCfg.OutlineRotation
+            if not silentFOVCfg.FilledAnimated then
+                silentFOVFillGrad.Rotation = silentFOVCfg.FilledRotation
+            end
+        end
+    end
+})
+silentcustomization:AddSlider("SilentFOVSpinSpd", {
+    Text = "spin speed", Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) silentFOVCfg.SpinSpd = val end
+})
+        local TBBox = Tabs.Combat:AddRightTabbox('Trigger bot')
+        local TB = TBBox:AddTab('Core')
+        local triggerVis = TBBox:AddTab('Visuals')
         TB:AddToggle('Trigger', { Text='Trigger bot', Default=Config.Trigger,
             Callback=function(v) if v then Trigger.enable() else Trigger.disable() end end })
         TB:AddDropdown('TriggerKey', {
@@ -16309,7 +16647,150 @@ end
             Min=0, Max=500, Rounding=0, Callback=function(v) Config.TriggerRefireMs = v end })
         TB:AddSlider('TriggerMaxDist', { Text='Max distance', Default=Config.TriggerMaxDist,
             Min=50, Max=400, Rounding=0, Callback=function(v) Config.TriggerMaxDist = v end })
-        local R = Tabs.Combat:AddRightGroupbox('Aimbot')
+        triggerVis:AddToggle("ShowTriggerFOV", {
+    Text = "show fov",
+    Default = Config.TriggerShowFOV or false,
+    Callback = function(val)
+        Config.TriggerShowFOV = val
+        triggerFOVContainer.Visible = val
+    end
+}):AddColorPicker("TriggerFOVOutlineColor1", {
+    Default = Color3.fromRGB(255, 180, 50),
+    Title = "outline color 1",
+    Callback = function(val)
+        triggerFOVCfg.OutlineColor1 = val
+        triggerFOVStrokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, triggerFOVCfg.OutlineColor1),
+            ColorSequenceKeypoint.new(1, triggerFOVCfg.OutlineColor2),
+        })
+    end
+}):AddColorPicker("TriggerFOVOutlineColor2", {
+    Default = Color3.fromRGB(255, 120, 0),
+    Title = "outline color 2",
+    Callback = function(val)
+        triggerFOVCfg.OutlineColor2 = val
+        triggerFOVStrokeGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, triggerFOVCfg.OutlineColor1),
+            ColorSequenceKeypoint.new(1, triggerFOVCfg.OutlineColor2),
+        })
+    end
+})
+
+triggerVis:AddToggle("TriggerFOVFilled", {
+    Text = "fov fill",
+    Default = false,
+    Callback = function(val)
+        triggerFOVCfg.FilledEnabled = val
+        triggerFOVFill.Visible = val
+    end
+}):AddColorPicker("TriggerFOVFillColor1", {
+    Default = Color3.fromRGB(255, 180, 50),
+    Title = "fill color 1",
+    Callback = function(val)
+        triggerFOVCfg.FilledColor1 = val
+        triggerFOVFillGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, triggerFOVCfg.FilledColor1),
+            ColorSequenceKeypoint.new(1, triggerFOVCfg.FilledColor2),
+        })
+    end
+}):AddColorPicker("TriggerFOVFillColor2", {
+    Default = Color3.fromRGB(0, 0, 0),
+    Title = "fill color 2",
+    Callback = function(val)
+        triggerFOVCfg.FilledColor2 = val
+        triggerFOVFillGrad.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, triggerFOVCfg.FilledColor1),
+            ColorSequenceKeypoint.new(1, triggerFOVCfg.FilledColor2),
+        })
+    end
+})
+
+triggerVis:AddToggle("TriggerFOVFillAnimated", {
+    Text = "animated fill",
+    Default = false,
+    Callback = function(val)
+        triggerFOVCfg.FilledAnimated = val
+        if not val then
+            triggerFOVFillGrad.Rotation = triggerFOVCfg.FilledRotation
+        end
+    end
+})
+
+triggerVis:AddSlider("TriggerFOVRadius", {
+    Text = "FOV radius",
+    Default = Config.TriggerFOV or 120,
+    Min = 20, Max = 800, Rounding = 0,
+    Callback = function(v) Config.TriggerFOV = v end
+})
+
+triggerVis:AddSlider("TriggerFOVOutlineThickness", {
+    Text = "outline thickness",
+    Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
+    Callback = function(val)
+        triggerFOVCfg.OutlineThickness = val
+        triggerFOVStroke.Thickness = val
+    end
+})
+triggerVis:AddSlider("TriggerFOVOutlineTransparency", {
+    Text = "outline transparency",
+    Default = 0, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        triggerFOVCfg.OutlineTransparency = val
+        triggerFOVStroke.Transparency = val
+    end
+})
+triggerVis:AddSlider("TriggerFOVOutlineRotation", {
+    Text = "outline rotation",
+    Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        triggerFOVCfg.OutlineRotation = val
+        triggerFOVStrokeGrad.Rotation = val
+    end
+})
+triggerVis:AddSlider("TriggerFOVFillTransparency", {
+    Text = "fill transparency",
+    Default = 0.7, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        triggerFOVCfg.FilledTransparency = val
+        triggerFOVFill.BackgroundTransparency = val
+    end
+})
+triggerVis:AddSlider("TriggerFOVFillRotation", {
+    Text = "fill rotation",
+    Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        triggerFOVCfg.FilledRotation = val
+        if not triggerFOVCfg.FilledAnimated then
+            triggerFOVFillGrad.Rotation = val
+        end
+    end
+})
+triggerVis:AddSlider("TriggerFOVFillSpeed", {
+    Text = "fill anim speed",
+    Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) triggerFOVCfg.FilledSpeed = val end
+})
+triggerVis:AddToggle("TriggerFOVSpin", {
+    Text = "spin",
+    Default = false,
+    Callback = function(val)
+        triggerFOVCfg.SpinOn = val
+        if not val then
+            triggerFOVStrokeGrad.Rotation = triggerFOVCfg.OutlineRotation
+            if not triggerFOVCfg.FilledAnimated then
+                triggerFOVFillGrad.Rotation = triggerFOVCfg.FilledRotation
+            end
+        end
+    end
+})
+triggerVis:AddSlider("TriggerFOVSpinSpd", {
+    Text = "spin speed",
+    Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) triggerFOVCfg.SpinSpd = val end
+})
+        local AB = Tabs.Combat:AddRightTabbox('Aimbot')
+        local R = AB:AddTab('Core')
+        local aimbotCustomTab = AB:AddTab('Visuals')
         R:AddToggle('Aimbot', { Text='Aimbot', Default=Config.Aimbot,
             Callback=function(v) if v then Aimbot.enable() else Aimbot.disable() end end })
         R:AddDropdown('AimbotKey', {
@@ -16383,12 +16864,123 @@ end
             Min=0, Max=1, Rounding=2, Callback=function(v) Config.AimbotOvershoot = v end })
         R:AddToggle('AimbotShowLock', { Text='Show lock indicator', Default=(Config.AimbotShowLock or false),
             Callback=function(v) Config.AimbotShowLock = v end })
-        R:AddToggle('AimbotShowFOV', { Text='Debug FOV circle', Default=(Config.AimbotShowFOV or false),
-            Callback=function(v) Config.AimbotShowFOV = v end })
         R:AddToggle('AimbotDebug', { Text='Debug readout', Default=(Config.AimbotDebug or false),
             Callback=function(v) Config.AimbotDebug = v end })
         R:AddToggle('AimbotDirectCamera', { Text='Direct camera fallback', Default=(Config.AimbotDirectCamera or false),
             Callback=function(v) Config.AimbotDirectCamera = v end })
+        aimbotCustomTab:AddToggle("ShowAimbotFOV", {
+    Text = "show fov",
+    Default = Config.AimbotShowFOV or false,
+    Callback = function(val)
+        Config.AimbotShowFOV = val
+        aimbotFOVContainer.Visible = val
+    end
+}):AddColorPicker("AimbotFOVOutlineColor1", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "outline color 1",
+    Callback = function(val) aimbotFOVCfg.OutlineColor1 = val; updaimbotoutlinegrad() end
+}):AddColorPicker("AimbotFOVOutlineColor2", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "outline color 2",
+    Callback = function(val) aimbotFOVCfg.OutlineColor2 = val; updaimbotoutlinegrad() end
+})
+
+aimbotCustomTab:AddToggle("AimbotFOVFilled", {
+    Text = "fov fill",
+    Default = false,
+    Callback = function(val)
+        aimbotFOVCfg.FilledEnabled = val
+        aimbotFOVFill.Visible = val
+    end
+}):AddColorPicker("AimbotFOVFillColor1", {
+    Default = Color3.fromRGB(255, 255, 255),
+    Title = "fill color 1",
+    Callback = function(val) aimbotFOVCfg.FilledColor1 = val; updaimbotfillgrad() end
+}):AddColorPicker("AimbotFOVFillColor2", {
+    Default = Color3.fromRGB(0, 0, 0),
+    Title = "fill color 2",
+    Callback = function(val) aimbotFOVCfg.FilledColor2 = val; updaimbotfillgrad() end
+})
+
+aimbotCustomTab:AddToggle("AimbotFOVFillAnimated", {
+    Text = "animated fill",
+    Default = false,
+    Callback = function(val)
+        aimbotFOVCfg.FilledAnimated = val
+        if not val then aimbotFOVFillGrad.Rotation = aimbotFOVCfg.FilledRotation end
+    end
+})
+
+aimbotCustomTab:AddSlider("AimbotFOVDegVis", {
+    Text = "FOV (deg)",
+    Default = Config.AimbotFOVDeg or 20,
+    Min = 1, Max = 180, Rounding = 1,
+    Callback = function(v) Config.AimbotFOVDeg = v end
+})
+
+aimbotCustomTab:AddSlider("AimbotFOVOutlineThickness", {
+    Text = "outline thickness",
+    Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
+    Callback = function(val)
+        aimbotFOVCfg.OutlineThickness = val
+        aimbotFOVStroke.Thickness = val
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVOutlineTransparency", {
+    Text = "outline transparency",
+    Default = 0, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        aimbotFOVCfg.OutlineTransparency = val
+        aimbotFOVStroke.Transparency = val
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVOutlineRotation", {
+    Text = "outline rotation",
+    Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        aimbotFOVCfg.OutlineRotation = val
+        aimbotFOVStrokeGrad.Rotation = val
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVFillTransparency", {
+    Text = "fill transparency",
+    Default = 0.7, Min = 0, Max = 1, Rounding = 2,
+    Callback = function(val)
+        aimbotFOVCfg.FilledTransparency = val
+        aimbotFOVFill.BackgroundTransparency = val
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVFillRotation", {
+    Text = "fill rotation",
+    Default = 0, Min = 0, Max = 360, Rounding = 0,
+    Callback = function(val)
+        aimbotFOVCfg.FilledRotation = val
+        if not aimbotFOVCfg.FilledAnimated then aimbotFOVFillGrad.Rotation = val end
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVFillSpeed", {
+    Text = "fill anim speed",
+    Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) aimbotFOVCfg.FilledSpeed = val end
+})
+aimbotCustomTab:AddToggle("AimbotFOVSpin", {
+    Text = "spin",
+    Default = false,
+    Callback = function(val)
+        aimbotFOVCfg.SpinOn = val
+        if not val then
+            aimbotFOVStrokeGrad.Rotation = aimbotFOVCfg.OutlineRotation
+            if not aimbotFOVCfg.FilledAnimated then
+                aimbotFOVFillGrad.Rotation = aimbotFOVCfg.FilledRotation
+            end
+        end
+    end
+})
+aimbotCustomTab:AddSlider("AimbotFOVSpinSpd", {
+    Text = "spin speed",
+    Default = 1, Min = 0.1, Max = 10, Rounding = 1,
+    Callback = function(val) aimbotFOVCfg.SpinSpd = val end
+})
         local L2 = Tabs.Combat:AddLeftGroupbox('Targeting')
         L2:AddToggle('TeamCheck', { Text='Team check', Default=Config.TeamCheck,
             Callback=function(v) Config.TeamCheck = v end })
@@ -17648,51 +18240,10 @@ end
         local v555 = Tabs.Misc:AddRightGroupbox('miscellaneous')
 
         _G.Features = _G.Features or {}
-        _G.Features.Noclip = _G.Features.Noclip or { Enabled = false, Conn = nil }
         _G.Features.Handicaps = _G.Features.Handicaps or { Enabled = false }
         _G.Features.ModDetector = _G.Features.ModDetector or {
             Enabled = false, Connection = nil, Checking = false
         }
-
-        local function updNoclip()
-            if _G.Features.Noclip.Conn then
-                _G.Features.Noclip.Conn:Disconnect()
-                _G.Features.Noclip.Conn = nil
-            end
-            local character = lp.Character
-            if not character then return end
-            if _G.Features.Noclip.Enabled then
-                _G.Features.Noclip.Conn = RunService.Stepped:Connect(function()
-                    local cur = lp.Character
-                    if not cur then return end
-                    for _, part in pairs(cur:GetDescendants()) do
-                        if part:IsA("BasePart") then
-                            part.CanCollide = false
-                        end
-                    end
-                end)
-            else
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = true
-                    end
-                end
-            end
-        end
-
-        lp.CharacterAdded:Connect(function()
-            task.wait(0.2)
-            if _G.Features.Noclip.Enabled then updNoclip() end
-        end)
-
-        v555:AddToggle('noclip', {
-            Text = 'noclip',
-            Default = false,
-            Callback = function(Value)
-                _G.Features.Noclip.Enabled = Value
-                updNoclip()
-            end
-        })
 
         local function updHandicaps()
             pcall(function()
@@ -18469,10 +19020,332 @@ end
             end
         })
     end
-    local playerbox = Tabs.Player:AddLeftGroupbox('Notice:')
-    local player2box = Tabs.Player:AddRightGroupbox('Notice 2:')
-    playerbox:AddLabel('player Modifications are still in development!\n\- player mods will be released as soon as me and novax finished our exam :)\n\- aswell as better ragebot, more visuals and improved HUD!', true)
-    player2box:AddLabel('please join the discord :D\n\- swift and novax the goat\n\- status: undetected and working (tested by: novax)', true)
+    do
+    Config.PlayerWalkSpeed     = tonumber(Config.PlayerWalkSpeed) or 16
+    Config.PlayerJumpPower     = tonumber(Config.PlayerJumpPower) or 50
+    Config.PlayerWalkSpeedOn   = Config.PlayerWalkSpeedOn == true
+    Config.PlayerJumpPowerOn   = Config.PlayerJumpPowerOn == true
+    Config.PlayerNoclip        = Config.PlayerNoclip == true
+    Config.PlayerFlight        = Config.PlayerFlight == true
+    Config.PlayerFlightSpeed   = tonumber(Config.PlayerFlightSpeed) or 50
+    Config.PlayerInfJump       = Config.PlayerInfJump == true
+
+    local playerState = {
+        noclipConn = nil,
+        flightConn = nil,
+        speedConn  = nil,
+        jumpConn   = nil,
+        slideConn  = nil,
+        bv         = nil, -- BodyVelocity for flight
+    }
+
+    local function getHum()
+        local ch = lp.Character
+        return ch and ch:FindFirstChildOfClass("Humanoid")
+    end
+
+    local function getHRP()
+        local ch = lp.Character
+        return ch and ch:FindFirstChild("HumanoidRootPart")
+    end
+
+    ----------------------------------------------------------------
+    -- WalkSpeed / JumpPower (re-apply every frame — game overwrites)
+    ----------------------------------------------------------------
+    local function applySpeed()
+        if playerState.speedConn then
+            playerState.speedConn:Disconnect()
+            playerState.speedConn = nil
+        end
+        if not (Config.PlayerWalkSpeedOn or Config.PlayerJumpPowerOn) then return end
+        playerState.speedConn = RunService.Heartbeat:Connect(function()
+            local hum = getHum()
+            if not hum then return end
+            if Config.PlayerWalkSpeedOn then
+                pcall(function() hum.WalkSpeed = Config.PlayerWalkSpeed end)
+            end
+            if Config.PlayerJumpPowerOn then
+                pcall(function()
+                    hum.UseJumpPower = true
+                    hum.JumpPower = Config.PlayerJumpPower
+                    hum.JumpHeight = Config.PlayerJumpPower / 5 -- rough R15 map
+                end)
+            end
+        end)
+    end
+
+    ----------------------------------------------------------------
+    -- Noclip
+    ----------------------------------------------------------------
+    local function applyNoclip()
+        if playerState.noclipConn then
+            playerState.noclipConn:Disconnect()
+            playerState.noclipConn = nil
+        end
+        if not Config.PlayerNoclip then
+            local ch = lp.Character
+            if ch then
+                for _, p in ipairs(ch:GetDescendants()) do
+                    if p:IsA("BasePart") then
+                        pcall(function() p.CanCollide = true end)
+                    end
+                end
+            end
+            return
+        end
+        playerState.noclipConn = RunService.Stepped:Connect(function()
+            local ch = lp.Character
+            if not ch then return end
+            for _, p in ipairs(ch:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    p.CanCollide = false
+                end
+            end
+        end)
+    end
+
+    ----------------------------------------------------------------
+    -- Flight (CFrame + BodyVelocity style)
+    ----------------------------------------------------------------
+    local function stopFlight()
+        if playerState.flightConn then
+            playerState.flightConn:Disconnect()
+            playerState.flightConn = nil
+        end
+        if playerState.bv then
+            pcall(function() playerState.bv:Destroy() end)
+            playerState.bv = nil
+        end
+        local hum = getHum()
+        if hum then pcall(function() hum.PlatformStand = false end) end
+    end
+
+    local function applyFlight()
+        stopFlight()
+        if not Config.PlayerFlight then return end
+
+        playerState.flightConn = RunService.RenderStepped:Connect(function(dt)
+            local hrp = getHRP()
+            local hum = getHum()
+            if not hrp or not hum then return end
+
+            pcall(function() hum.PlatformStand = true end)
+
+            local cam = workspace.CurrentCamera
+            if not cam then return end
+
+            local dir = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then dir = dir + cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then dir = dir - cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then dir = dir - cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then dir = dir + cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) or UserInputService:IsKeyDown(Enum.KeyCode.E) then
+                dir = dir + Vector3.yAxis
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) or UserInputService:IsKeyDown(Enum.KeyCode.Q) then
+                dir = dir - Vector3.yAxis
+            end
+
+            if dir.Magnitude > 0 then
+                dir = dir.Unit * Config.PlayerFlightSpeed
+            end
+            hrp.AssemblyLinearVelocity = dir
+            -- keep upright-ish
+            hrp.CFrame = CFrame.new(hrp.Position, hrp.Position + cam.CFrame.LookVector)
+        end)
+    end
+
+    ----------------------------------------------------------------
+    -- Infinite jump
+    ----------------------------------------------------------------
+    local function applyInfJump()
+        if playerState.jumpConn then
+            playerState.jumpConn:Disconnect()
+            playerState.jumpConn = nil
+        end
+        if not Config.PlayerInfJump then return end
+        playerState.jumpConn = UserInputService.JumpRequest:Connect(function()
+            local hum = getHum()
+            if hum then
+                pcall(function() hum:ChangeState(Enum.HumanoidStateType.Jumping) end)
+            end
+        end)
+    end
+
+    local function refreshAll()
+        applySpeed()
+        applyNoclip()
+        applyFlight()
+        applyInfJump()
+    end
+
+    lp.CharacterAdded:Connect(function()
+        task.wait(0.4)
+        refreshAll()
+    end)
+
+    ----------------------------------------------------------------
+    -- UI
+    ----------------------------------------------------------------
+    local moveBox = Tabs.Player:AddLeftGroupbox('Movement')
+    local flightBox = Tabs.Player:AddRightGroupbox('Flight & Misc')
+
+    moveBox:AddToggle('PlayerWalkSpeedOn', {
+        Text = 'Walk speed',
+        Default = Config.PlayerWalkSpeedOn,
+        Callback = function(v)
+            Config.PlayerWalkSpeedOn = v
+            applySpeed()
+        end
+    })
+    moveBox:AddSlider('PlayerWalkSpeed', {
+        Text = 'Speed value',
+        Default = Config.PlayerWalkSpeed,
+        Min = 1, Max = 200, Rounding = 0,
+        Callback = function(v)
+            Config.PlayerWalkSpeed = v
+            if Config.PlayerWalkSpeedOn then applySpeed() end
+        end
+    })
+
+    moveBox:AddToggle('PlayerJumpPowerOn', {
+        Text = 'Jump power',
+        Default = Config.PlayerJumpPowerOn,
+        Callback = function(v)
+            Config.PlayerJumpPowerOn = v
+            applySpeed()
+        end
+    })
+    moveBox:AddSlider('PlayerJumpPower', {
+        Text = 'Jump value',
+        Default = Config.PlayerJumpPower,
+        Min = 1, Max = 200, Rounding = 0,
+        Callback = function(v)
+            Config.PlayerJumpPower = v
+            if Config.PlayerJumpPowerOn then applySpeed() end
+        end
+    })
+
+    moveBox:AddToggle('PlayerNoclip', {
+        Text = 'Noclip',
+        Default = Config.PlayerNoclip,
+        Tooltip = 'Walk through walls',
+        Callback = function(v)
+            Config.PlayerNoclip = v
+            applyNoclip()
+        end
+    })
+
+    moveBox:AddToggle('PlayerInfJump', {
+        Text = 'Infinite jump',
+        Default = Config.PlayerInfJump,
+        Callback = function(v)
+            Config.PlayerInfJump = v
+            applyInfJump()
+        end
+    })
+
+    -- Slide boost UI + loop (old Vertex / MechanicsController)
+_G.Features = _G.Features or {}
+_G.Features.SlideBoost = _G.Features.SlideBoost or {
+    Enabled = false,
+    Speed   = 135,
+}
+
+moveBox:AddToggle('slide_boost', {
+    Text = 'enable',
+    Default = _G.Features.SlideBoost.Enabled,
+    Tooltip = 'Boosts real slide velocity via MechanicsController',
+    Callback = function(Value)
+        _G.Features.SlideBoost.Enabled = Value and true or false
+    end
+})
+
+moveBox:AddSlider('slide_speed', {
+    Text = 'slide boost',
+    Default = _G.Features.SlideBoost.Speed,
+    Min = 50,
+    Max = 1000,
+    Rounding = 0,
+    Compact = true,
+    Callback = function(Value)
+        _G.Features.SlideBoost.Speed = Value
+    end
+})
+
+task.spawn(function()
+    local LocalPlayer = lp
+    local mech
+
+    local function resolveMech()
+        local ok, result = pcall(function()
+            return require(LocalPlayer.PlayerScripts.Controllers.MechanicsController)
+        end)
+        if ok and result then
+            mech = result
+            return true
+        end
+        return false
+    end
+
+    while not resolveMech() do
+        task.wait(1)
+    end
+
+    local connection = RunService.RenderStepped:Connect(function()
+        if not _G.Features.SlideBoost.Enabled then return end
+        if not mech then
+            resolveMech()
+            return
+        end
+
+        local ok = pcall(function()
+            if mech.IsSliding and mech._sliding_velocity then
+                local v = mech._sliding_velocity.Velocity
+                if typeof(v) == "Vector3" and v.Magnitude > 1e-3 then
+                    mech._sliding_velocity.Velocity =
+                        v.Unit * (_G.Features.SlideBoost.Speed or 134)
+                end
+            end
+        end)
+
+        if not ok then
+            resolveMech()
+        end
+    end)
+
+    LocalPlayer.CharacterAdded:Connect(function()
+        task.wait(0.5)
+        resolveMech()
+    end)
+
+    Players.PlayerRemoving:Connect(function(player)
+        if player == LocalPlayer then
+            pcall(function() connection:Disconnect() end)
+        end
+    end)
+end)
+
+    flightBox:AddToggle('PlayerFlight', {
+        Text = 'Flight',
+        Default = Config.PlayerFlight,
+        Tooltip = 'WASD + Space/E up, Ctrl/Q down',
+        Callback = function(v)
+            Config.PlayerFlight = v
+            applyFlight()
+        end
+    })
+    flightBox:AddSlider('PlayerFlightSpeed', {
+        Text = 'Flight speed',
+        Default = Config.PlayerFlightSpeed,
+        Min = 10, Max = 200, Rounding = 0,
+        Callback = function(v)
+            Config.PlayerFlightSpeed = v
+        end
+    })
+
+    flightBox:AddLabel('Note: Rivals may reset WalkSpeed/Jump from the server. Client mods still help locally for movement feel.', true)
+end
     do
         local L = Tabs.Settings:AddLeftGroupbox('Menu')
         L:AddDropdown('GUIToggleKey', {
