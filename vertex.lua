@@ -13,7 +13,7 @@
         for _, n in ipairs({
             "VertexRageInfo", "VertexHitLogs", "VertexLockLine",
             "VertexSpecList", "VertexKeybinds", "VertexDiscordGate", "VertexDmgNums", "VertexTargetHUD",
-            "VertexManipIndicator"
+            "VertexManipIndicator", "VertexCrosshair"
         }) do
             local g = parent:FindFirstChild(n)
             if g then g:Destroy() end
@@ -640,6 +640,19 @@ end
         RageAttackTranslocate = false,
         RageVoidSpam              = true,
         RageVoidSpamAmount        = 3,
+        RageStrobeUseVoid     = false,   -- void between volleys
+        RageStrobeUseJitter   = true,
+        RageStrobeMultiSlot   = true,   -- cycle offsets; off = always behind
+        RageStrobeAttackSec  = 0.10,
+        RageStrobeHideSec    = 0.18,
+        RageStrobeShots      = 4,
+        RageStrobeSlots      = 3,
+        RageStrobeBehind     = 1.2,
+        RageStrobeSide       = 1.6,
+        RageStrobeUp         = 0.4,
+        RageStrobeDown       = 1.1,
+        RageStrobeJitter     = 0.25,
+        RageStrobeVoidOnMiss = true,
         RagePulseShootAttempts  = 3,
         RagePulseAttackBehind   = 1.4,
         RagePulseAttackInside   = 0.3,
@@ -650,7 +663,7 @@ end
         RagePulseAttackSeconds  = 0.12,
         RagePulsePreferBehind   = true,
         RageVoidResolver       = true,
-        RageVoidResolverLimit  = 500000,  -- |pos| above this = void
+        RageVoidResolverLimit  = 50000,  -- |pos| above this = void
         RageVoidResolverSpeed  = 1,       -- instant snap; use 0.15 for lerp
         RageTranslocateOffset     = -5,
         RageAntiTranslocate       = true,
@@ -664,11 +677,23 @@ end
         RageShieldBackstab = true,
         RageKnifeBackstab  = true,
         RageKillPlaneBuffer = 200,
+        RageKnifeRage            = false,  -- master
+        RageKnifeRageDist        = 3.0,    -- behind head
+        RageKnifeRageYOff        = 0.0,
+        RageKnifeRageJitter      = 0.35,
+        RageKnifeRageVoidY       = 50000000,
+        RageKnifeRagePreferReal  = true,   -- use real pos if already behind
+        RageKnifeRageForceFace   = true,
+        RageKnifeRageFireRate    = 1/60,
+        RageKnifeRageForceEquip  = true,   -- keep slot 3 equipped
         RageLab = false,
         RageVoidPhase = true,
         RageShowFOV          = false,
         RageFOV              = 180,
-        RageFOVPosition      = "Center", -- "Center" | "Muzzle"
+        RageFOVPosition      = "Target", -- "Center" | "Muzzle" | "Target"
+        SilentAimFOVPosition = "Target",
+        AimbotFOVPosition    = "Target",
+        TriggerFOVPosition   = "Target",
         RageShowInfo         = false,
         RageInfoFont         = "GothamBold",
         RageInfoSize         = 14,
@@ -676,6 +701,9 @@ end
         RageFOVOutline1      = Color3.fromRGB(255, 255, 255),
         RageFOVOutline2      = Color3.fromRGB(255, 255, 255),
         RageMode = "Polar",
+        RageAttackMode   = "Auto",  -- "Gun" | "Melee" | "Auto"
+        RageMeleeReach   = 18,      -- studs: Auto swaps to melee under this
+        RagePreferMeleeOnDeflect = true,
         AnimEnabled       = false,
         AnimLoop          = true,
         AnimAutoRespawn   = true,
@@ -799,6 +827,32 @@ KillSoundPreset = "Fatality",
 DeathSoundEnabled = false,
 CombatSoundVolume = 1.0,
 CombatSoundPitch = 1.0,
+        Blink = false,
+        BlinkType = "Movement Only",
+        BlinkAutoSend = false,
+        BlinkSendThreshold = 0.5,
+        Phase = false,
+        PhaseMode = "Character",
+        PhaseWallSize = 5,
+        ProjectileTP = false,
+        ChatSpam = false,
+        ChatSpamMode = "custom",
+        ChatSpamDelay = 1.5,
+        ChatSpamText = "Vertex.lol",
+        ShootSound = false,
+        ShootSoundId = "4049646104",
+        ShootSoundVolume = 0.5,
+        ShootSoundSpeed = 1,
+        CustomCrosshair = false,
+        CrosshairImageUrl = "",
+        CrosshairSize = 32,
+        CrosshairRotate = false,
+        CrosshairDisableGame = true,
+        ThirdPerson = false,
+        ThirdPersonMode = "ThirdPerson",
+        ThirdPersonUnlockMouse = false,
+        Freecam = false,
+        FreecamSpeed = 50,
         ESP = false, ESPTeamCheck = true,
         ESPMaxDistance = 1200, ESPMaxPlayers = 0,
         ESPFont = "Code",
@@ -1092,7 +1146,20 @@ CombatSoundPitch = 1.0,
         FFAAutoRespawnDelay  = 0.35,
         CollectHealth        = true,
         CollectAmmo          = true,
-        TargetHUD                 = false,
+        TargetHUD              = false,
+        TargetHUDPos           = "Bottom Center", -- Bottom Center / Top Center / Left / Right
+        TargetHUDScale         = 1,
+        TargetHUDFont          = "GothamBold",
+        TargetHUDNameSize      = 15,
+        TargetHUDShowHPText    = true,
+        TargetHUDShowDistance  = true,
+        TargetHUDShowWeapon    = true,
+        TargetHUDBgTransparency = 0.12,
+        TargetHUDBgColor       = Color3.fromRGB(20, 20, 20),
+        TargetHUDNameColor     = Color3.fromRGB(240, 240, 240),
+        TargetHUDHpHigh        = Color3.fromRGB(80, 220, 120),
+        TargetHUDHpMid         = Color3.fromRGB(230, 180, 50),
+        TargetHUDHpLow         = Color3.fromRGB(220, 60, 60),
         AntiKatana                = true,
         AntiDeflect               = true,
         CameraSpin                = false,
@@ -1936,7 +2003,22 @@ CombatSoundPitch = 1.0,
         local sticky      = opts.stickyTarget
         local stickyBonus = opts.stickyBonus or 0
         local vp     = Camera.ViewportSize
-        local center = Vector2.new(vp.X * 0.5, vp.Y * 0.5)
+        -- follow target when sticky exists; else screen center
+        local center = opts.fovCenter
+        if not center then
+            if sticky and sticky.Character then
+                local p = sticky.Character:FindFirstChild("HitboxHead")
+                    or sticky.Character:FindFirstChild("Head")
+                    or sticky.Character:FindFirstChild("HumanoidRootPart")
+                if p then
+                    local sp, on = Camera:WorldToViewportPoint(p.Position)
+                    if on and sp.Z > 0 then
+                        center = Vector2.new(sp.X, sp.Y)
+                    end
+                end
+            end
+        end
+        center = center or Vector2.new(vp.X * 0.5, vp.Y * 0.5)
         local best, bestPart, bestScore = nil, nil, math.huge
         for _, player in ipairs(getSafePlayers()) do
             if player ~= lp and isValidTarget(player, false) then
@@ -8785,117 +8867,89 @@ CombatSoundPitch = 1.0,
         end
                 local function findManipulateOrigin(fromPos, toPos, targetPart)
                     if typeof(fromPos) ~= "Vector3" or typeof(toPos) ~= "Vector3" then
-                        return nil
+                        return nil, nil
                     end
 
                     local mode  = Config.SilentAimManipulateMode or "OnBlocked"
+                    if mode == "Off" then return nil, nil end
+
                     local range = math.clamp(tonumber(Config.SilentAimManipulateRange) or 18, 2, 60)
+                    local REACH = math.min(9.5, range)
+                    local FLOOR_DEPTH = 5
+
+                    -- don't run manip while holding melee (Knife Rage owns that)
+                    do
+                        local it = getEquippedItem and getEquippedItem()
+                        if it and Rage._itemIsMelee and Rage._itemIsMelee(it) then
+                            return nil, nil
+                        end
+                    end
 
                     local rp = RaycastParams.new()
                     rp.FilterType = Enum.RaycastFilterType.Exclude
                     local filter = { lp.Character }
-                    if targetPart then
-                        local m = targetPart:FindFirstAncestorOfClass("Model")
-                        if m then filter[#filter + 1] = m end
-                    end
+                    local targetModel = targetPart and targetPart:FindFirstAncestorOfClass("Model")
+                    if targetModel then filter[#filter + 1] = targetModel end
                     rp.FilterDescendantsInstances = filter
 
+                    -- AB-style: clear only if nothing in the way
                     local function clear(origin, dest)
                         local dir = dest - origin
-                        local mag = dir.Magnitude
-                        if mag < 0.05 then return true end
-                        local hit = Workspace:Raycast(origin, dir, rp)
-                        if not hit then return true end
-                        local hm = hit.Instance and hit.Instance:FindFirstAncestorOfClass("Model")
-                        if hm and Players:GetPlayerFromCharacter(hm) then return true end
-                        return (hit.Position - dest).Magnitude < 2.5
+                        if dir.Magnitude < 0.05 then return true end
+                        return Workspace:Raycast(origin, dir, rp) == nil
                     end
 
                     local alreadyClear = clear(fromPos, toPos)
-                    -- OnBlocked / OnBestTarget: only rewrite when LOS is blocked
                     if (mode == "OnBlocked" or mode == "OnBestTarget") and alreadyClear then
-                        return nil
-                    end
-                    if mode == "Off" then return nil end
-                    -- Always: still try to find a better origin even if clear
-
-                    local candidates = {}
-                    local function add(p)
-                        if typeof(p) ~= "Vector3" then return end
-                        if (p - fromPos).Magnitude > range * 1.35 then return end
-                        candidates[#candidates + 1] = p
+                        return nil, nil
                     end
 
-                    -- depth under both ends (UE-style underfloor)
-                    for _, dy in ipairs({ -2, -4, -6, -8, -12, -16, -20 }) do
-                        if math.abs(dy) <= range then
-                            add(fromPos + Vector3.new(0, dy, 0))
-                            add(toPos + Vector3.new(0, dy, 0))
+                    -- 1) underfloor from floor ray (Anti-Brain)
+                    local floorHit = Workspace:Raycast(fromPos, Vector3.new(0, -FLOOR_DEPTH, 0), rp)
+                    if floorHit and floorHit.Instance and floorHit.Instance:IsA("BasePart") then
+                        local ground = floorHit.Instance
+                        local depth = floorHit.Distance
+                            + math.min(ground.Size.Y * 0.99, REACH - floorHit.Distance)
+                        local below = fromPos + Vector3.new(0, -depth, 0)
+
+                        if clear(below, toPos) then
+                            return below, nil
                         end
-                    end
 
-                    -- rings around target + shooter
-                    local steps = 12
-                    for r = 2, math.floor(range), 2 do
-                        for i = 0, steps - 1 do
-                            local a = (i / steps) * math.pi * 2
-                            local off = Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
-                            add(toPos + off + Vector3.new(0, 2, 0))
-                            add(toPos + off + Vector3.new(0, -3, 0))
-                            add(fromPos + off)
-                            add(fromPos + off + Vector3.new(0, -4, 0))
-                        end
-                    end
-
-                    -- vertical ladder at from
-                    for y = 2, math.floor(range), 2 do
-                        add(fromPos + Vector3.new(0, y, 0))
-                        add(fromPos + Vector3.new(0, -y, 0))
-                    end
-
-                    -- midpoints
-                    local mid = (fromPos + toPos) * 0.5
-                    for _, y in ipairs({ 3, 6, 10, -4, -8, -12 }) do
-                        if math.abs(y) <= range then
-                            add(mid + Vector3.new(0, y, 0))
-                        end
-                    end
-
-                    -- along the shot axis, offset sideways
-                    local axis = toPos - fromPos
-                    if axis.Magnitude > 1 then
-                        local fwd = axis.Unit
-                        local right = fwd:Cross(Vector3.yAxis)
-                        if right.Magnitude < 1e-3 then
-                            right = fwd:Cross(Vector3.xAxis)
-                        end
-                        right = right.Unit
-                        for t = 0.25, 0.75, 0.25 do
-                            local base = fromPos:Lerp(toPos, t)
-                            for _, s in ipairs({ -range * 0.35, range * 0.35 }) do
-                                add(base + right * s)
-                                add(base + right * s + Vector3.new(0, -6, 0))
+                        -- retarget to body foot if head is still blocked
+                        local body = targetModel and targetModel:FindFirstChild("HitboxBody")
+                        if body and body:IsA("BasePart") then
+                            local drop = Vector3.new(0, -body.Size.Y / 2.01, 0)
+                            local foot = body.Position + drop
+                            if clear(below, foot) then
+                                return below, body -- caller can use part override
                             end
                         end
                     end
 
+                    -- 2) sphere around origin (26 dirs * REACH)
                     local best, bestScore = nil, 1e9
-                    for _, origin in ipairs(candidates) do
-                        if clear(origin, toPos) then
-                            local dist = (origin - fromPos).Magnitude
-                            -- prefer closer alts; slight bias toward lower Y (harder to contest)
-                            local score = dist + math.max(0, origin.Y - fromPos.Y) * 0.15
-                            if mode == "OnBestTarget" or mode == "Always" then
-                                -- prefer origin closer to target as secondary
-                                score = score + (origin - toPos).Magnitude * 0.02
-                            end
-                            if score < bestScore then
-                                bestScore = score
-                                best = origin
+                    for x = -1, 1 do
+                        for y = -1, 1 do
+                            for z = -1, 1 do
+                                if not (x == 0 and y == 0 and z == 0) then
+                                    local from = fromPos + Vector3.new(x, y, z).Unit * REACH
+                                    if clear(from, toPos) then
+                                        local score = (from - fromPos).Magnitude
+                                            + math.max(0, from.Y - fromPos.Y) * 0.15
+                                        if mode == "OnBestTarget" or mode == "Always" then
+                                            score = score + (from - toPos).Magnitude * 0.02
+                                        end
+                                        if score < bestScore then
+                                            bestScore = score
+                                            best = from
+                                        end
+                                    end
+                                end
                             end
                         end
                     end
-                    return best
+                    return best, nil
                 end
 
         Rage._buildShotFields = buildShotFields
@@ -8909,10 +8963,14 @@ CombatSoundPitch = 1.0,
             local fromPos = fromCamPos
             State.SilentManipulated = false
             if Config.SilentAimManipulate and typeof(fromPos) == "Vector3" and hitPart then
-                local alt = findManipulateOrigin(fromPos, hitPart.Position, hitPart)
+                local alt, altPart = findManipulateOrigin(fromPos, hitPart.Position, hitPart)
                 if alt then
                     fromPos = alt
                     State.SilentManipulated = true
+                    State.SilentManipStamp = tick()
+                    if altPart then
+                        hitPart = altPart
+                    end
                 end
             end
 
@@ -8946,6 +9004,60 @@ CombatSoundPitch = 1.0,
                 if okN and type(nm) == "string" and nm:lower():find("melee", 1, true) then return true end
                 return false
             end
+                        local function wantMelee(targetPlayer, dist)
+                local mode = Config.RageAttackMode or "Auto"
+                if mode == "Melee" then return true end
+                if mode == "Gun" then return false end
+                -- Auto
+                if Config.RagePreferMeleeOnDeflect and targetPlayer and isDeflecting and isDeflecting(targetPlayer) then
+                    return true
+                end
+                local reach = tonumber(Config.RageMeleeReach) or 18
+                if type(dist) == "number" and dist <= reach then
+                    return true
+                end
+                local cur = getEquippedItem()
+                if cur and not Rage._itemIsMelee(cur) then
+                    local a = itemAmmo(cur)
+                    if a == 0 then return true end -- empty gun → melee
+                end
+                return false
+            end
+            Rage._wantMelee = wantMelee
+
+            local function ensureWeaponForTarget(targetPlayer, dist)
+                local needMelee = wantMelee(targetPlayer, dist)
+                local cur = getEquippedItem()
+                if needMelee then
+                    if cur and Rage._itemIsMelee(cur) then return cur end
+                    -- equip melee slot
+                    local m = slotItemByIndex(3)
+                    if m then
+                        pcall(function()
+                            local lf = Rivals.Fighter and Rivals.Fighter.LocalFighter
+                            if lf and lf.EquipItem then lf:EquipItem(m) end
+                        end)
+                        return m
+                    end
+                    return cur
+                else
+                    if cur and not Rage._itemIsMelee(cur) then return cur end
+                    for _, idx in ipairs({ 1, 2 }) do
+                        if slotUsable(idx) then
+                            local it = slotItemByIndex(idx)
+                            if it then
+                                pcall(function()
+                                    local lf = Rivals.Fighter and Rivals.Fighter.LocalFighter
+                                    if lf and lf.EquipItem then lf:EquipItem(it) end
+                                end)
+                                return it
+                            end
+                        end
+                    end
+                    return cur
+                end
+            end
+            Rage._ensureWeaponForTarget = ensureWeaponForTarget
             Rage._itemIsMelee = itemIsMelee
             local function itemAmmo(item)
                 if not item then return nil end
@@ -9291,7 +9403,37 @@ CombatSoundPitch = 1.0,
                         State.RageTarget = nil
                         State.Target = nil
                         State.RageKillPauseUntil = tick() + (Config.RageKillPause or 0.12)
-                        State.RageStatus = "Retargeting"
+
+                        -- stop intentional hide so we don't sit in void after the kill
+                        State.RageVoidActive = false
+                        State.RagePulsePhase = nil
+                        State.RageStrobePhase = nil
+                        State.RageStrobePhaseUntil = 0
+                        State.RageStrobeSlot = 0
+                        State.RageForceRecover = true
+                        State.RageStatus = "Void recover"
+
+                        -- snap out immediately if already OOB
+                        pcall(function()
+                            local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                            if not hrp then return end
+                            local limit = tonumber(Config.RageVoidResolverLimit) or 50000
+                            local p = hrp.Position
+                            local oob = (p ~= p)
+                                or math.abs(p.X) >= limit
+                                or math.abs(p.Y) >= limit
+                                or math.abs(p.Z) >= limit
+                            if oob then
+                                local home = State.RageRealCF
+                                    or (workspace.CurrentCamera and workspace.CurrentCamera.CFrame)
+                                if home then
+                                    local cf = typeof(home) == "CFrame" and home or CFrame.new(home)
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                    hrp.AssemblyAngularVelocity = Vector3.zero
+                                    hrp.CFrame = cf + Vector3.new(0, 4, 0)
+                                end
+                            end
+                        end)
                     end
                 end
 
@@ -9300,6 +9442,9 @@ CombatSoundPitch = 1.0,
                     if Config.RageAutoRetarget ~= false or not State.RageTarget then
                         State.Target = nextT
                         State.RageTarget = nextT
+                        if nextT then
+                            State.RageForceRecover = false
+                        end
                     end
                 end
             end)
@@ -9670,6 +9815,33 @@ end)
             State.RageVoidSteps = (State.RageVoidSteps or 0) + 1
             return cf
         end
+        do
+            local _voidSpamAcc = 0
+            if not State._VoidSpamConn then
+                State._VoidSpamConn = RunService.Heartbeat:Connect(function(dt)
+                    if not Config.Rage or not Config.RageVoidSpam then return end
+                    if not State.RageVoidActive then return end
+                    local rate = math.clamp(tonumber(Config.RageVoidSpamRate) or 0.05, 0.02, 0.25)
+                    _voidSpamAcc = _voidSpamAcc + dt
+                    if _voidSpamAcc < rate then return end
+                    _voidSpamAcc = 0
+
+                    local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+                    local cf = State.RageVoidCF
+                    if not cf then return end
+
+                    local n = math.clamp(tonumber(Config.RageVoidSpamAmount) or 3, 1, 12)
+                    for _ = 1, n do
+                        pcall(function()
+                            hrp.CFrame = cf
+                            hrp.AssemblyLinearVelocity = Vector3.zero
+                            hrp.AssemblyAngularVelocity = Vector3.zero
+                        end)
+                    end
+                end)
+            end
+        end
         local function weaponReady(it)
             if not it then return false end
             local okE, equipping = pcall(function() return it:IsEquipping() end)
@@ -9708,6 +9880,14 @@ end)
             return "requested"
         end
         local _SLOT_INDEX = { Primary = 1, Secondary = 2 }
+        Rage._setStatus = function(main, extra)
+            main = tostring(main or "Idle")
+            if extra and extra ~= "" and extra ~= main then
+                State.RageStatus = main .. " + " .. tostring(extra)
+            else
+                State.RageStatus = main
+            end
+        end
         Rage._weaponRecovery = function(it)
             local mode = Config.RageOnEmpty or "Reload"
             local okA, ammo = pcall(function() return it and it:Get("Ammo") end)
@@ -9978,13 +10158,6 @@ do
     PredictionService:Init()
     Rage.PredictionService = PredictionService
 end
--- better prediction
-if Config.RagePrediction and hh and State.RageTarget then
-    PredictionService.enabled = true
-    PredictionService.multiplier = tonumber(Config.RagePredictionMulti) or 1.2
-    PredictionService:Update(State.RageTarget)
-    aimPos = PredictionService:Predict(hh, eyePos)
-end
 
 -- ===== VERTEX HvH RESOLVER + ANTI-AA =====
 local Resolver = {
@@ -9998,6 +10171,7 @@ local Resolver = {
     records = {},
     MaxHistory = 14,
 }
+Rage.Resolver = Resolver
 
 local function isInsanePos(p)
     if not p or p ~= p then return true end
@@ -10156,22 +10330,23 @@ function Resolver:GetState(player)
     return rec.state, rec.confidence
 end
 
-if Config.RageResolver ~= false then
-                    Resolver.Enabled = true
-                    Resolver.Mode = Config.RageResolverMode or "Auto"
-                    Resolver.AntiAA = Config.RageAntiAA ~= false
-                    Resolver.VoidChase = Config.RageVoidChase ~= false
-                    Resolver.ExposureSnipe = Config.RageExposureSnipe ~= false
-                    Resolver.JitterBreak = Config.RageJitterBreak ~= false
-                    Resolver.ForceBodyOnLowConf = Config.RageForceBody ~= false
-                    local resolved, part = Resolver:Resolve(tgt, aimPos)
-                    aimPos = resolved
-                    local st, conf = Resolver:GetState(tgt)
-                    State.RageResolverState = st
-                    State.RageResolverConf = conf
-                end
+local R = Resolver or (Rage and Rage.Resolver)
+            if Config.RageResolver ~= false and R then
+                R.Enabled = true
+                R.Mode = Config.RageResolverMode or "Auto"
+                R.AntiAA = Config.RageAntiAA ~= false
+                R.VoidChase = Config.RageVoidChase ~= false
+                R.ExposureSnipe = Config.RageExposureSnipe ~= false
+                R.JitterBreak = Config.RageJitterBreak ~= false
+                R.ForceBodyOnLowConf = Config.RageForceBody ~= false
+                local resolved, part = R:Resolve(tgt, aimPos)
+                aimPos = resolved
+                local st, conf = R:GetState(tgt)
+                State.RageResolverState = st
+                State.RageResolverConf = conf
+            end
 
-                                if Config.RageAntiTranslocate and tgt and tgt.Character then
+                    if Config.RageAntiTranslocate and tgt and tgt.Character then
                     local eroot = tgt.Character:FindFirstChild("HumanoidRootPart")
                     if eroot then
                         local ep = eroot.Position
@@ -10231,6 +10406,16 @@ if clientCF and hrp then
     hrp.CFrame = clientCF
 end
         local function polarFire(eyePos, aimPos, hh)
+
+            pcall(function()
+                local tgt = State.RageTarget or State.Target
+                local thrp = tgt and tgt.Character and tgt.Character:FindFirstChild("HumanoidRootPart")
+                local my = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                if Rage._ensureWeaponForTarget and tgt and thrp and my then
+                    Rage._ensureWeaponForTarget(tgt, (my.Position - thrp.Position).Magnitude)
+                end
+            end)
+
             local reach = 1e9
             if hh and hh.Parent then reach = (hh.Position - eyePos).Magnitude end
             if not (reach <= 395) then
@@ -10335,11 +10520,20 @@ end
                 return nil
             end
             local function orbitVoid(hrp, status)
-                State.RageStatus = status
                 State.OrbitVantage = nil
                 State.OrbitVantageUntil = 0
                 State.RageFiring = false
                 State.RageVoidActive = true
+                -- keep caller status for mode-owned hides (Strobe/Pulse); generic hides still say Hiding
+                local s = status
+                if type(s) ~= "string" or s == "" then
+                    s = "Hiding"
+                elseif s == "Hiding" or s == "No target" or s == "Dry"
+                    or s == "Swapping" or s == "Reloading" or s == "Deflecting"
+                    or s == "Reloading + Swapping" then
+                    s = "Hiding"
+                end
+                State.RageStatus = s
                 clearFireSolution()
                 _orbHiding = true
                 _orbPrimeUntil = 0
@@ -10350,6 +10544,20 @@ end
             local function orbitTick(ch, hrp, tgt)
                 local kf = killFloor()
                 if not tgt or not tgt.Character then
+                    if State.RageForceRecover or tick() < (State.RageKillPauseUntil or 0) then
+                        State.RageVoidActive = false
+                        State.RageStatus = "Void recover"
+                        local home = State.RageRealCF
+                            or (workspace.CurrentCamera and workspace.CurrentCamera.CFrame)
+                        if home and hrp then
+                            local cf = typeof(home) == "CFrame" and home or CFrame.new(home)
+                            pcall(function()
+                                hrp.AssemblyLinearVelocity = Vector3.zero
+                                hrp.CFrame = cf + Vector3.new(0, 4, 0)
+                            end)
+                        end
+                        return
+                    end
                     return orbitVoid(hrp, "No target")
                 end
                 local tc   = tgt.Character
@@ -10368,12 +10576,27 @@ end
                 end
                 if not weaponReady(getEquippedItem()) then
                     local act = Rage._weaponRecovery(getEquippedItem())
+                    State.RageVoidActive = true
+
                     if act == "dry" then
+                        Rage._setStatus("Dry")
                         return orbitVoid(hrp, "Dry")
                     end
-                    if act == "swap" or act == "swap-wait" then
+                    if act == "swap" then
+                        Rage._setStatus("Swapping")
                         return orbitVoid(hrp, "Swapping")
                     end
+                    if act == "swap-wait" then
+                        -- still on reload path while swap is throttled
+                        Rage._setStatus("Reloading", "Swapping")
+                        return orbitVoid(hrp, "Reloading + Swapping")
+                    end
+                    if act == "throttled" then
+                        Rage._setStatus("Reloading")
+                        return orbitVoid(hrp, "Reloading")
+                    end
+
+                    Rage._setStatus("Reloading")
                     return orbitVoid(hrp, "Reloading")
                 end
                 local aimPos = hh.Position
@@ -10422,7 +10645,20 @@ end
                     end
 
                     if State.RagePulsePhase == "hide" then
-                        return orbitVoid(hrp, "Pulse Hide")
+                        -- park void briefly
+                        local ret = orbitVoid(hrp, "Pulse Hide")
+                        -- if hide window almost over, pre-arm restore
+                        if tick() >= (State.RagePulsePhaseUntil or 0) - 0.02 then
+                            local home = State.RageRealCF or _lastSaneCF
+                            if home and hrp then
+                                pcall(function()
+                                    hrp.CFrame = typeof(home) == "CFrame" and home or CFrame.new(home)
+                                    hrp.AssemblyLinearVelocity = Vector3.zero
+                                end)
+                                State.RageVoidActive = false
+                            end
+                        end
+                        return ret
                     end
 
                     if not thrp then
@@ -10472,6 +10708,117 @@ end
                         State.RageStatus = useBehind and "Pulse Attack (behind)" or "Pulse Attack (inside)"
                         local eye = pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0)
                         for _ = 1, attempts do
+                            polarFire(eye, aim, hh)
+                        end
+                    end
+                    pcall(Visuals.notifyTarget, tgt)
+                    return
+                end
+
+                                if mode == "Strobe" then
+                    local now = tick()
+                    local attSec  = tonumber(Config.RageStrobeAttackSec) or 0.10
+                    local hideSec = tonumber(Config.RageStrobeHideSec) or 0.18
+                    local shots   = math.clamp(math.floor(tonumber(Config.RageStrobeShots) or 4), 1, 14)
+                    local slots   = math.clamp(math.floor(tonumber(Config.RageStrobeSlots) or 3), 2, 6)
+                    local behind  = tonumber(Config.RageStrobeBehind) or 1.2
+                    local side    = tonumber(Config.RageStrobeSide) or 1.6
+                    local up      = tonumber(Config.RageStrobeUp) or 0.4
+                    local down    = tonumber(Config.RageStrobeDown) or 1.1
+                    local jit     = (Config.RageStrobeUseJitter ~= false)
+                        and (tonumber(Config.RageStrobeJitter) or 0.25) or 0
+                    local useVoid = Config.RageStrobeUseVoid ~= false
+                    local multi   = Config.RageStrobeMultiSlot ~= false
+
+                    if State.RageStrobePhase == nil then
+                        State.RageStrobePhase = "attack"
+                        State.RageStrobePhaseUntil = now + attSec
+                        State.RageStrobeSlot = 0
+                    end
+
+                    if now >= (State.RageStrobePhaseUntil or 0) then
+                        if State.RageStrobePhase == "attack" then
+                            State.RageStrobePhase = "hide"
+                            State.RageStrobePhaseUntil = now + hideSec
+                            State.RageStrobeSlot = (State.RageStrobeSlot or 0) + 1
+                        else
+                            State.RageStrobePhase = "attack"
+                            State.RageStrobePhaseUntil = now + attSec
+                        end
+                    end
+
+                    -- intentional void window: void resolver must not force home + wipe phase
+                    if State.RageStrobePhase == "hide" and useVoid then
+                        State.RageIntentionalVoid = true
+                        State.RageIntentionalVoidUntil = (State.RageStrobePhaseUntil or now) + 0.05
+                        State.RageFiring = false
+                        State.RageVoidActive = true
+                        State.RageStatus = "Strobe Hide"
+                        clearFireSolution()
+                        Rage._displace(hrp, voidCFrame())
+                        return
+                    elseif State.RageStrobePhase == "hide" then
+                        -- soft hide: sink under target instead of full void
+                        State.RageIntentionalVoid = false
+                        State.RageFiring = false
+                        State.RageVoidActive = false
+                        State.RageStatus = "Strobe Hide"
+                        if thrp then
+                            local soft = thrp.Position + Vector3.new(0, -(down + 3), 0)
+                            Rage._displace(hrp, CFrame.new(soft))
+                        end
+                        return
+                    end
+
+                    -- attack phase
+                    State.RageIntentionalVoid = false
+                    if not thrp or not hh then
+                        if Config.RageStrobeVoidOnMiss ~= false then
+                            State.RageIntentionalVoid = true
+                            State.RageIntentionalVoidUntil = now + math.max(hideSec, 0.12)
+                            return orbitVoid(hrp, "Strobe no target part")
+                        end
+                        return
+                    end
+
+                    local look = thrp.CFrame.LookVector
+                    if look.Magnitude < 1e-3 then look = Vector3.new(0, 0, -1) else look = look.Unit end
+                    local right = thrp.CFrame.RightVector
+                    if right.Magnitude < 1e-3 then right = Vector3.new(1, 0, 0) else right = right.Unit end
+
+                    local slot = multi and ((State.RageStrobeSlot or 0) % slots) or 0
+                    local function j()
+                        return (math.random() - 0.5) * 2 * jit
+                    end
+
+                    local offset
+                    if slot == 0 then
+                        offset = -look * behind + Vector3.new(0, up * 0.5, 0)
+                    elseif slot == 1 then
+                        offset = -right * side + Vector3.new(0, -down, 0) - look * (behind * 0.4)
+                    elseif slot == 2 then
+                        offset = right * side + Vector3.new(0, up, 0) - look * (behind * 0.3)
+                    else
+                        local ang = (slot / slots) * math.pi * 2
+                        offset = (right * math.cos(ang) + look * math.sin(ang)) * side
+                            + Vector3.new(0, up * 0.3 - down * 0.3, 0)
+                            - look * (behind * 0.5)
+                    end
+                    offset = offset + Vector3.new(j(), j() * 0.5, j())
+
+                    local pos = thrp.Position + offset
+                    local aim = hh.Position
+                    Rage._displace(hrp, CFrame.new(pos, aim))
+                    State.RageVoidActive = false
+
+                    if modeHoldFire() then
+                        State.RageFiring = false
+                        State.RageStatus = "Strobe Protected"
+                    else
+                        State.RageFiring = true
+                        State.RageStatus = "Strobe Attack #" .. tostring(slot + 1)
+                        local eye = pos + Vector3.new(0, Config.RagePBEyeUp or 3, 0)
+                        for _ = 1, shots do
                             polarFire(eye, aim, hh)
                         end
                     end
@@ -10702,6 +11049,13 @@ end
                 if not vantage or not isSanePos(vantage) or posIsOOB(vantage) then
                     return orbitVoid(hrp, "Orbit (hiding)")
                 end
+                if hrp and not State.RageVoidActive then
+    local p = hrp.Position
+    local limit = tonumber(Config.RageVoidResolverLimit) or 50000
+    if math.abs(p.X) < limit and math.abs(p.Y) < limit and math.abs(p.Z) < limit then
+        if Rage._setLastSaneCF then Rage._setLastSaneCF(hrp.CFrame) end
+    end
+end
                 State.RageStatus = status or "Orbit"
                 State.RageVoidActive = false
                 local jumped = _orbLastDisp == nil or (vantage - _orbLastDisp).Magnitude > ORBIT_JUMP
@@ -10744,7 +11098,7 @@ end
                 local mode = Config.RageMode or "Orbit"
                 if mode ~= "Orbit" and mode ~= "Random" and mode ~= "Random v2"
                 and mode ~= "Cross" and mode ~= "Static" and mode ~= "Polar"
-                and mode ~= "Pulse" then
+                and mode ~= "Pulse" and mode ~= "Strobe" then
                     State.RageStatus = "Mode error"
                     return
                 end
@@ -10766,6 +11120,9 @@ end
             State.RageStatus = "Idle"
             State.RagePulsePhase = nil
             State.RagePulsePhaseUntil = 0
+            State.RageStrobePhase = nil
+            State.RageStrobePhaseUntil = 0
+            State.RageStrobeSlot = 0
             pcall(function()
                 if restoreHome then restoreHome(false) end
             end)
@@ -10904,7 +11261,8 @@ end
             end
             _rageConn = RunService.Heartbeat:Connect(function()
                 local mode = Config.RageMode or "Polar"
-                local onMap = (mode == "Orbit" or mode == "Random" or mode == "Random v2" or mode == "Cross" or mode == "Static" or mode == "Pulse")
+                local onMap = (mode == "Orbit" or mode == "Random" or mode == "Random v2"
+                    or mode == "Cross" or mode == "Static" or mode == "Pulse" or mode == "Strobe")
                 if not Config.Rage or not onMap then
                     if Rage._setPhysicsFlags then pcall(Rage._setPhysicsFlags, false) end
                     restoreHome(false)
@@ -10999,13 +11357,13 @@ end
                 if displaced then State.RageLastParkPos = hrp.Position end
             end)
         end
-                function Rage.enable()
+            function Rage.enable()
             Config.Rage = true
             if Rage._startTargetLoop then Rage._startTargetLoop() end
 
             local mode = Config.RageMode or "Polar"
             local onMap = (mode == "Orbit" or mode == "Random" or mode == "Random v2"
-                or mode == "Cross" or mode == "Static" or mode == "Pulse")
+                or mode == "Cross" or mode == "Static" or mode == "Pulse" or mode == "Strobe")
 
             -- always stop the other path first
             if onMap then
@@ -11021,17 +11379,38 @@ end
 
             State.RageStatus = onMap and (mode .. " ready") or "Polar ready"
         end
-        function Rage.disable()
-        Config.Rage = false
+                function Rage.disable()
+            Config.Rage = false
             if Rage._polarCoreStop then Rage._polarCoreStop() end
             State.RagePostPark = false
             pcall(function() RunService:UnbindFromRenderStep(_rageRestoreName) end)
             if _rageConn then _rageConn:Disconnect(); _rageConn = nil end
             if _rageStepConn then _rageStepConn:Disconnect(); _rageStepConn = nil end
-            if _rageCooldownConn then _rageCooldownConn:Disconnect(); _rageCooldownConn = nil end
+            if _rageCdConn then _rageCdConn:Disconnect(); _rageCdConn = nil end
             if _rageCharConn then _rageCharConn:Disconnect(); _rageCharConn = nil end
             if _rageDiedConn then _rageDiedConn:Disconnect(); _rageDiedConn = nil end
-            restoreHome(false)
+
+            -- 1) pull out of void FIRST (while home CF still exists)
+            local home = State.RageRealCF
+            State.RageVoidActive = false
+            State.RagePulsePhase = nil
+            State.RagePulsePhaseUntil = 0
+            State.RageStrobePhase = nil
+            State.RageStrobePhaseUntil = 0
+            State.RageStrobeSlot = 0
+            if home then
+                local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    pcall(function()
+                        hrp.CFrame = typeof(home) == "CFrame" and home or CFrame.new(home)
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.AssemblyAngularVelocity = Vector3.zero
+                    end)
+                end
+            end
+            pcall(function() restoreHome(false) end)
+
+            -- 2) then clear state
             State.RageRealCF = nil; State.RageRealChar = nil
             State.RageTarget = nil; State.RageVoidCF = nil; State.RageVoidBase = nil
             State.RageParkDirty = false; State.RageLastParkPos = nil
@@ -11042,8 +11421,313 @@ end
             State.RageStatus = "Idle"
             clearFireSolution()
         end
+                ----------------------------------------------------------------
+        -- Knife Rage (behind-head desync + UseItem backstab)
+        ----------------------------------------------------------------
+        do
+            local KR = {
+                mode = "void",
+                desyncCF = nil,
+                restore = {},
+                cache = { p = nil, root = nil, head = nil, t = 0 },
+                connHB = nil,
+                connRS = nil,
+                connEq = nil,
+                fireRunning = false,
+            }
+
+            local function krSameTeam(p)
+                if not p or p == lp then return true end
+                local a, b = lp:GetAttribute("TeamID"), p:GetAttribute("TeamID")
+                if a and b then return a == b end
+                if lp.Team and p.Team then return lp.Team == p.Team end
+                return false
+            end
+
+            local function krSane(v)
+                return typeof(v) == "Vector3" and v == v
+                    and math.abs(v.X) < 1e5 and math.abs(v.Y) < 1e5 and math.abs(v.Z) < 1e5
+            end
+
+            local function krFacing(pos, lookAt)
+                local dir = Vector3.new(lookAt.X - pos.X, 0, lookAt.Z - pos.Z)
+                if dir.Magnitude < 1e-3 then return CFrame.new(pos) end
+                return CFrame.lookAt(pos, pos + dir.Unit)
+            end
+
+            local function krGetTarget()
+                local now = tick()
+                if now - (KR.cache.t or 0) < 0.10 and KR.cache.p then
+                    local ch = KR.cache.p.Character
+                    local r = ch and ch:FindFirstChild("HumanoidRootPart")
+                    local h = ch and (ch:FindFirstChild("HitboxHead") or ch:FindFirstChild("Head"))
+                    local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                    if r and h and hum and hum.Health > 0 then
+                        return KR.cache.p, r, h
+                    end
+                end
+                local my = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                if not my then return nil end
+                local best, br, bh, bd = nil, nil, nil, tonumber(Config.MaxDistance) or 400
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= lp and not krSameTeam(p) then
+                        if Config.TeamCheck and isTeammate and isTeammate(p) then
+                            -- skip
+                        else
+                            local ch = p.Character
+                            local r = ch and ch:FindFirstChild("HumanoidRootPart")
+                            local h = ch and (ch:FindFirstChild("HitboxHead") or ch:FindFirstChild("Head"))
+                            local hum = ch and ch:FindFirstChildOfClass("Humanoid")
+                            if r and h and hum and hum.Health > 0 and krSane(r.Position) then
+                                local d = (my.Position - r.Position).Magnitude
+                                if d < bd then best, br, bh, bd = p, r, h, d end
+                            end
+                        end
+                    end
+                end
+                KR.cache = { p = best, root = br, head = bh, t = now }
+                return best, br, bh
+            end
+
+            local function krFloatPoint(tRoot, tHead)
+                if not (tRoot and tHead) then return nil end
+                if not krSane(tRoot.Position) or not krSane(tHead.Position) then return nil end
+                local look = tRoot.CFrame.LookVector
+                local flat = Vector3.new(look.X, 0, look.Z)
+                if flat.Magnitude < 0.01 then flat = Vector3.new(0, 0, 1) end
+                flat = flat.Unit
+                local dist = tonumber(Config.RageKnifeRageDist) or 3
+                local yoff = tonumber(Config.RageKnifeRageYOff) or 0
+                local behind = tHead.Position - flat * dist + Vector3.new(0, yoff, 0)
+                if not krSane(behind) then return nil end
+                return behind, flat
+            end
+
+            local function krFeasible(tRoot, tHead, tgt)
+                local behind, flat = krFloatPoint(tRoot, tHead)
+                if not behind then return false end
+                local toBehind = Vector3.new(behind.X - tHead.Position.X, 0, behind.Z - tHead.Position.Z)
+                if toBehind.Magnitude > 0.01 and toBehind.Unit:Dot(flat) > -0.3 then
+                    return false
+                end
+                local rp = RaycastParams.new()
+                rp.FilterType = Enum.RaycastFilterType.Exclude
+                local ignore = { lp.Character }
+                if tgt and tgt.Character then ignore[#ignore + 1] = tgt.Character end
+                rp.FilterDescendantsInstances = ignore
+                local hit = workspace:Raycast(behind, tHead.Position - behind, rp)
+                if hit and (hit.Position - tHead.Position).Magnitude > 3 then
+                    return false
+                end
+                return true, behind
+            end
+
+            local function krRealBehind(hrp, tRoot)
+                if not hrp or not tRoot then return false end
+                local look = tRoot.CFrame.LookVector
+                local flatLook = Vector3.new(look.X, 0, look.Z)
+                local toMe = hrp.Position - tRoot.Position
+                local flatMe = Vector3.new(toMe.X, 0, toMe.Z)
+                if flatLook.Magnitude < 0.01 or flatMe.Magnitude < 0.1 then return false end
+                if flatMe.Magnitude > (tonumber(Config.MaxDistance) or 400) then return false end
+                return flatMe.Unit:Dot(flatLook.Unit) <= -0.3
+            end
+
+            local function krResolveStartAiming()
+                local Enums = Rivals.Enums
+                if not Enums then return "StartAiming" end
+                for _, name in ipairs({ "StartAiming", "StartAim", "AimStart" }) do
+                    local ok, tok = pcall(function() return Enums:ToEnum(name) end)
+                    if ok and tok ~= nil then return tok end
+                end
+                return "StartAiming"
+            end
+
+            local function krIsMelee(item)
+                if not item then return false end
+                if Rage._itemIsMelee and Rage._itemIsMelee(item) then return true end
+                local info = rawget(item, "Info")
+                local t = info and rawget(info, "Type")
+                return t == "Melee" or t == "Knife"
+            end
+
+            function Rage._knifeRageStop()
+                if KR.connHB then pcall(function() KR.connHB:Disconnect() end) KR.connHB = nil end
+                if KR.connRS then
+                    pcall(function() RunService:UnbindFromRenderStep("VertexKnifeRageRestore") end)
+                    KR.connRS = nil
+                end
+                if KR.connEq then pcall(function() KR.connEq:Disconnect() end) KR.connEq = nil end
+                KR.fireRunning = false
+                KR.desyncCF = nil
+                KR.mode = "void"
+                State.RageIntentionalVoid = false
+            end
+
+            function Rage._knifeRageStart()
+                Rage._knifeRageStop()
+
+                RunService:BindToRenderStep("VertexKnifeRageRestore", Enum.RenderPriority.First.Value, function()
+                    for _, d in ipairs(KR.restore) do
+                        if d.root and d.root.Parent then
+                            pcall(function()
+                                d.root.CFrame = d.oldCF
+                                d.root.AssemblyLinearVelocity = d.oldVel
+                            end)
+                        end
+                    end
+                    KR.restore = {}
+                end)
+                KR.connRS = true
+
+                if Config.RageKnifeRageForceEquip ~= false then
+                    KR.connEq = RunService.RenderStepped:Connect(function()
+                        if not Config.RageKnifeRage then return end
+                        local lf = Rivals.Fighter and Rivals.Fighter.LocalFighter
+                        if not lf then return end
+                        local items = rawget(lf, "Items")
+                        if type(items) ~= "table" then return end
+                        local knife = items[3]
+                        if knife and not rawget(knife, "IsEquipped") then
+                            local cf = rawget(knife, "ClientFighter") or lf
+                            if cf and type(cf.EquipItem) == "function" then
+                                pcall(function() cf:EquipItem(3) end)
+                            end
+                        end
+                    end)
+                end
+
+                KR.connHB = RunService.Heartbeat:Connect(function()
+                    if not Config.RageKnifeRage then return end
+
+                    local tgt, tRoot, tHead = krGetTarget()
+                    local ch = lp.Character
+                    local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+                    if not hrp then return end
+
+                    local destCF, canBS = nil, false
+                    if tgt and tHead and tRoot then
+                        local ok, behind = krFeasible(tRoot, tHead, tgt)
+                        if ok and behind then
+                            canBS = true
+                            if Config.RageKnifeRageForceFace ~= false then
+                                destCF = krFacing(behind, tHead.Position)
+                            else
+                                destCF = CFrame.lookAt(behind, tHead.Position)
+                            end
+                        end
+                    end
+
+                    if not canBS then
+                        local pos = hrp.Position
+                        destCF = CFrame.new(pos.X, tonumber(Config.RageKnifeRageVoidY) or 5e7, pos.Z)
+                        KR.mode = "void"
+                        State.RageStatus = "Knife Rage Void"
+                        State.RageIntentionalVoid = true
+                        State.RageIntentionalVoidUntil = tick() + 0.25
+                    else
+                        KR.mode = "backstab"
+                        State.RageStatus = "Knife Rage Backstab"
+                        State.RageIntentionalVoid = true
+                        State.RageIntentionalVoidUntil = tick() + 0.25
+                        State.RageTarget = tgt
+                    end
+                    KR.desyncCF = destCF
+
+                    local oldCF = hrp.CFrame
+                    local oldVel = hrp.AssemblyLinearVelocity
+                    if KR.mode == "backstab" and destCF then
+                        local j = tonumber(Config.RageKnifeRageJitter) or 0.35
+                        local jit = Vector3.new(
+                            (math.random() - 0.5) * j,
+                            (math.random() - 0.5) * j,
+                            (math.random() - 0.5) * j
+                        )
+                        local cf = destCF
+                        if Config.RageKnifeRageForceFace ~= false and tHead then
+                            cf = krFacing(destCF.Position + jit, tHead.Position)
+                        else
+                            cf = destCF + jit
+                        end
+                        pcall(function() hrp.CFrame = cf end)
+                    else
+                        pcall(function() hrp.CFrame = destCF end)
+                    end
+                    pcall(function() hrp.AssemblyLinearVelocity = oldVel end)
+                    table.insert(KR.restore, { root = hrp, oldCF = oldCF, oldVel = oldVel })
+                end)
+
+                if not KR.fireRunning then
+                    KR.fireRunning = true
+                    task.spawn(function()
+                        local startAiming = krResolveStartAiming()
+                        local Util = Rivals.Util
+                        while Config.RageKnifeRage and KR.fireRunning do
+                            local rate = tonumber(Config.RageKnifeRageFireRate) or (1 / 60)
+                            task.wait(math.max(rate, 0.01))
+
+                            local tgt, tRoot, tHead = krGetTarget()
+                            if not (tgt and tHead and tRoot) then continue end
+                            local ch = lp.Character
+                            local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
+                            if not hrp then continue end
+
+                            local attackerPos, usingReal = nil, false
+                            if Config.RageKnifeRagePreferReal ~= false and krRealBehind(hrp, tRoot) then
+                                attackerPos = hrp.Position
+                                usingReal = true
+                            elseif KR.mode == "backstab" and KR.desyncCF then
+                                attackerPos = KR.desyncCF.Position
+                            else
+                                continue
+                            end
+
+                            local attackerCF
+                            if Config.RageKnifeRageForceFace ~= false then
+                                attackerCF = krFacing(attackerPos, tHead.Position)
+                            else
+                                attackerCF = usingReal and hrp.CFrame or KR.desyncCF
+                            end
+
+                            local lf = Rivals.Fighter and Rivals.Fighter.LocalFighter
+                            if not lf then continue end
+                            local item = lf.EquippedItem
+                            if not krIsMelee(item) then continue end
+
+                            local okId, objId = pcall(function() return item:Get("ObjectID") end)
+                            if not okId or not objId then continue end
+                            if not Util or not Util.EncodeCFrame then continue end
+
+                            local targetCF = tHead.CFrame
+                            local headOffset = tHead.CFrame:ToObjectSpace(CFrame.new(tHead.Position))
+                            local meleeData = {
+                                [utf8.char(1)] = {
+                                    [utf8.char(0)] = Util:EncodeCFrame(attackerCF),
+                                    [utf8.char(1)] = Util:EncodeCFrame(targetCF),
+                                    [utf8.char(2)] = tHead,
+                                    [utf8.char(3)] = Util:EncodeCFrame(headOffset),
+                                },
+                                [utf8.char(2)] = startAiming,
+                            }
+
+                            local UseItem = ReplicatedStorage:FindFirstChild("Remotes")
+                                and ReplicatedStorage.Remotes:FindFirstChild("Replication")
+                                and ReplicatedStorage.Remotes.Replication:FindFirstChild("Fighter")
+                                and ReplicatedStorage.Remotes.Replication.Fighter:FindFirstChild("UseItem")
+                            if UseItem then
+                                pcall(function() UseItem:FireServer(objId, startAiming, meleeData, nil) end)
+                                State.RageKnifeSwings = (State.RageKnifeSwings or 0) + 1
+                                State.RageKnifeStatus = "knife rage swing"
+                            end
+                        end
+                        KR.fireRunning = false
+                    end)
+                end
+            end
+        end
         function Rage.unload()
             Rage.disable()
+            pcall(function() if Rage._knifeRageStop then Rage._knifeRageStop() end end)
             if _tgtConn then pcall(function() _tgtConn:Disconnect() end); _tgtConn = nil end
             if _labConn then pcall(function() _labConn:Disconnect() end); _labConn = nil end
         end
@@ -11789,45 +12473,95 @@ end
             _voidSteps = _voidSteps + 1
             return cf
         end
-                local _voidResolverConn = nil
+        local _voidResolverConn = nil
         local _lastSaneCF = nil
+
+        Rage._getLastSaneCF = function()
+            return _lastSaneCF
+        end
+        Rage._setLastSaneCF = function(cf)
+            if typeof(cf) == "CFrame" then
+                local p = cf.Position
+                local limit = tonumber(Config.RageVoidResolverLimit) or 50000
+                if p == p
+                    and math.abs(p.X) < limit
+                    and math.abs(p.Y) < limit
+                    and math.abs(p.Z) < limit then
+                    _lastSaneCF = cf
+                end
+            end
+        end
 
         local function voidResolverTick()
             if Config.RageVoidResolver == false then return end
+
             local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
 
+            local limit = tonumber(Config.RageVoidResolverLimit) or 50000
             local p = hrp.Position
-            local limit = tonumber(Config.RageVoidResolverLimit) or 500000
-            local sane = (p == p)
-                and math.abs(p.X) < limit
+            if p ~= p then return end -- NaN
+
+            -- Strobe/Pulse intentional void: do NOT force home or wipe phase
+            if State.RageIntentionalVoid
+                or (State.RageIntentionalVoidUntil and tick() < State.RageIntentionalVoidUntil)
+                or (Config.RageMode == "Strobe" and State.RageStrobePhase == "hide")
+                or (Config.RageMode == "Pulse" and State.RagePulsePhase == "hide")
+                or Config.RageKnifeRage == true then
+                return
+            end
+
+            local sane = math.abs(p.X) < limit
                 and math.abs(p.Y) < limit
                 and math.abs(p.Z) < limit
 
+            -- on map: save position and done
             if sane then
-                -- only remember non-rage-driven park as home if not void-hiding
-                if not State.RageVoidActive then
-                    _lastSaneCF = hrp.CFrame
+                _lastSaneCF = hrp.CFrame
+                if State.RageForceRecover then
+                    State.RageForceRecover = false
+                end
+                if State.RageStatus == "Void recover" then
+                    State.RageStatus = "Retargeting"
                 end
                 return
             end
 
-            -- stuck in void / OOB → rise out
+            -- OOB / void: always recover (no intentionalHide)
             local home = _lastSaneCF
-                or State.RageRealCF
-                or (workspace.CurrentCamera and workspace.CurrentCamera.CFrame)
-            if not home then return end
+            if home then
+                local hp = home.Position
+                if not (hp == hp
+                    and math.abs(hp.X) < limit
+                    and math.abs(hp.Y) < limit
+                    and math.abs(hp.Z) < limit) then
+                    home = nil
+                end
+            end
+            if not home then
+                local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+                if spawn then
+                    home = spawn.CFrame
+                else
+                    home = CFrame.new(0, 80, 0)
+                end
+            end
 
-            local target = typeof(home) == "CFrame" and home or CFrame.new(home)
-            -- lift slightly so you don't clip into floor
-            target = target + Vector3.new(0, 4, 0)
+            local target = home + Vector3.new(0, 4, 0)
 
             pcall(function()
                 hrp.AssemblyLinearVelocity = Vector3.zero
                 hrp.AssemblyAngularVelocity = Vector3.zero
                 hrp.CFrame = target
             end)
+
             State.RageVoidActive = false
+            State.RageVoidActive = false
+            State.RagePulsePhase = nil
+            State.RageStrobePhase = nil
+            State.RageStrobePhaseUntil = 0
+            State.RageStrobeSlot = 0
+            State.RageForceRecover = false
             State.RageStatus = "Void recover"
         end
 
@@ -12144,6 +12878,35 @@ end
             resetAttackContinuity()
             _firing = false
             State.RageFiring = false
+
+            -- after kill / force recover: NEVER re-void
+            local recovering = State.RageForceRecover == true
+                or (tick() < (State.RageKillPauseUntil or 0))
+                or status == "Void recover"
+                or status == "Retargeting"
+
+            if recovering then
+                State.RageStatus = "Void recover"
+                State.RageVoidActive = false
+                State.RagePulsePhase = nil
+                State.RageStrobePhase = nil
+                State.RageStrobePhaseUntil = 0
+                State.RageStrobeSlot = 0
+                _hiding = false
+                -- pull to safe home instead of void
+                local home = _lastSaneCF or State.RageRealCF
+                    or (workspace.CurrentCamera and workspace.CurrentCamera.CFrame)
+                if home and hrp then
+                    local cf = typeof(home) == "CFrame" and home or CFrame.new(home)
+                    pcall(function()
+                        hrp.AssemblyLinearVelocity = Vector3.zero
+                        hrp.AssemblyAngularVelocity = Vector3.zero
+                        hrp.CFrame = cf + Vector3.new(0, 4, 0)
+                    end)
+                end
+                return
+            end
+
             State.RageStatus = status
             State.RageVoidActive = VOID_HIDE
             _prevPark    = nil
@@ -12176,7 +12939,13 @@ end
             _target = tgt
             State.RageTarget = tgt
             publishPredict(tgt)
-            if not tgt or not tgt.Character then return hide(hrp, "No target") end
+            if not tgt or not tgt.Character then
+                -- kill pause / force recover → stay out of void
+                if State.RageForceRecover or tick() < (State.RageKillPauseUntil or 0) then
+                    return hide(hrp, "Void recover")  -- hide() now restores home when recovering
+                end
+                return hide(hrp, "No target")
+            end
             local holdFire = isProtected(tgt)
             if not holdFire then
                 _immuneSince, _immuneTgt = 0, nil
@@ -12200,12 +12969,22 @@ end
             local it = getEquippedItem()
             if not weaponReady(it) then
                 local act = Rage._weaponRecovery(it)
+                State.RageVoidActive = true
+
                 if act == "dry" then
+                    Rage._setStatus("Dry")
                     return hide(hrp, "Dry")
                 end
-                if act == "swap" or act == "swap-wait" then
+                if act == "swap" then
+                    Rage._setStatus("Swapping")
                     return hide(hrp, "Swapping")
                 end
+                if act == "swap-wait" then
+                    Rage._setStatus("Reloading", "Swapping")
+                    return hide(hrp, "Reloading + Swapping")
+                end
+
+                Rage._setStatus("Reloading")
                 return hide(hrp, "Reloading")
             end
             local hh = tgt.Character:FindFirstChild("HitboxHead") or tgt.Character:FindFirstChild("Head")
@@ -17610,7 +18389,7 @@ end
     end)
 
     local Window = Library:CreateWindow({
-        Title = '                      Vertex.lol - v1.7                     Rivals',
+        Title = '                      Vertex.lol - v1.8                    Rivals',
         Center = true,
         AutoShow = true,
         Resizable = true,
@@ -17879,33 +18658,46 @@ local function screenCenter()
     return Vector2.new(vp.X * 0.5, vp.Y * 0.5)
 end
 
--- optional follow-muzzle: plug your muzzle world→screen here
-local function silentfovcenter()
-    return screenCenter()
-end
-local function aimbotfovcenter()
-    return screenCenter()
-end
-
--- map AimbotFOVDeg → pixels if you keep deg in new Vertex
-local function aimbotRadiusPixels()
-    if Config.AimbotFOVDeg then
-        -- reuse your existing fovPixels() if you have it
-        if fovPixels then return fovPixels(Config.AimbotFOVDeg or 20) end
-        local deg = math.clamp(Config.AimbotFOVDeg or 20, 0.1, 89)
-        local vp = Camera.ViewportSize
-        return (vp.Y * 0.5) * math.tan(math.rad(deg)) / math.tan(math.rad(Camera.FieldOfView * 0.5))
+-- Best current combat target → screen position (for FOV follow)
+local function getFollowTargetScreenPos()
+    local candidates = {
+        State.RageTarget,
+        State.SilentLastTarget,
+        State.AimbotLastTarget,
+        State.Target,
+    }
+    for _, tgt in ipairs(candidates) do
+        if tgt then
+            local char = (typeof(tgt) == "Instance" and tgt:IsA("Player") and tgt.Character)
+                or (typeof(tgt) == "Instance" and tgt:IsA("Model") and tgt)
+                or nil
+            if char then
+                local part = char:FindFirstChild("HitboxHead")
+                    or char:FindFirstChild("Head")
+                    or char:FindFirstChild("HumanoidRootPart")
+                if part then
+                    local sp, on = Camera:WorldToViewportPoint(part.Position)
+                    if on and sp.Z > 0 then
+                        return Vector2.new(sp.X, sp.Y)
+                    end
+                end
+            end
+        end
     end
-    return Config.SilentAimFOV or 250 -- fallback
+    return nil
 end
 
-local function ragefovcenter()
-    local mode = Config.RageFOVPosition or "Center"
+local function resolveFovCenter(mode)
+    mode = mode or "Center"
+    if mode == "Target" then
+        local t = getFollowTargetScreenPos()
+        if t then return t end
+        return screenCenter() -- no lock → fall back to center
+    end
     if mode == "Muzzle" then
         local ok, pos = pcall(function()
             local char = lp.Character
             if not char then return nil end
-            -- try tool handle / muzzle attachments first
             local tool = char:FindFirstChildOfClass("Tool")
             if tool then
                 local h = tool:FindFirstChild("Handle") or tool:FindFirstChildWhichIsA("BasePart")
@@ -17919,9 +18711,9 @@ local function ragefovcenter()
                     end
                 end
             end
-            -- fallback: eye/muzzle offset from camera (same idea as rage eyeCF)
             local eye = Camera.CFrame
-            local muzzle = eye.Position + eye.RightVector * 0.25 - Vector3.new(0, Config.RageEyeMuzzleSep or 0.07, 0)
+            local muzzle = eye.Position + eye.RightVector * 0.25
+                - Vector3.new(0, Config.RageEyeMuzzleSep or 0.07, 0)
             local sp, onScreen = Camera:WorldToViewportPoint(muzzle)
             if onScreen and sp.Z > 0 then
                 return Vector2.new(sp.X, sp.Y)
@@ -17931,6 +18723,29 @@ local function ragefovcenter()
         if ok and pos then return pos end
     end
     return screenCenter()
+end
+
+local function silentfovcenter()
+    return resolveFovCenter(Config.SilentAimFOVPosition or "Target")
+end
+local function aimbotfovcenter()
+    return resolveFovCenter(Config.AimbotFOVPosition or "Target")
+end
+local function triggerfovcenter()
+    return resolveFovCenter(Config.TriggerFOVPosition or "Target")
+end
+local function ragefovcenter()
+    return resolveFovCenter(Config.RageFOVPosition or "Target")
+end
+
+local function aimbotRadiusPixels()
+    if Config.AimbotFOVDeg then
+        if fovPixels then return fovPixels(Config.AimbotFOVDeg or 20) end
+        local deg = math.clamp(Config.AimbotFOVDeg or 20, 0.1, 89)
+        local vp = Camera.ViewportSize
+        return (vp.Y * 0.5) * math.tan(math.rad(deg)) / math.tan(math.rad(Camera.FieldOfView * 0.5))
+    end
+    return Config.SilentAimFOV or 250
 end
 
 local RAGE_FONTS = {
@@ -18113,7 +18928,7 @@ RunService.RenderStepped:Connect(function()
     end
 
     if showTrigger then
-    local c = screenCenter()
+    local c = triggerfovcenter()
     local r = Config.TriggerFOV or 120
     triggerFOVContainer.Size = UDim2.fromOffset(r * 2, r * 2)
     triggerFOVContainer.Position = UDim2.fromOffset(c.X - r, c.Y - r)
@@ -18258,6 +19073,14 @@ silentcustomization:AddToggle("SilentFOVFillAnimated", {
 
 silentcustomization:AddSlider('SilentAimFOV', { Text='FOV radius', Default=Config.SilentAimFOV,
             Min=20, Max=2000, Rounding=0, Callback=function(v) Config.SilentAimFOV = v end })
+
+silentcustomization:AddDropdown('SilentAimFOVPosition', {
+    Text = 'FOV position',
+    Values = { 'Center', 'Muzzle', 'Target' },
+    Default = Config.SilentAimFOVPosition or 'Target',
+    Tooltip = 'Target = FOV circle follows locked enemy',
+    Callback = function(v) Config.SilentAimFOVPosition = v end
+})
 
 silentcustomization:AddSlider("SilentFOVOutlineThickness", {
     Text = "outline thickness", Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
@@ -18581,6 +19404,13 @@ triggerVis:AddSlider("TriggerFOVRadius", {
     Callback = function(v) Config.TriggerFOV = v end
 })
 
+triggerVis:AddDropdown('TriggerFOVPosition', {
+    Text = 'FOV position',
+    Values = { 'Center', 'Muzzle', 'Target' },
+    Default = Config.TriggerFOVPosition or 'Target',
+    Callback = function(v) Config.TriggerFOVPosition = v end
+})
+
 triggerVis:AddSlider("TriggerFOVOutlineThickness", {
     Text = "outline thickness",
     Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
@@ -18785,6 +19615,13 @@ aimbotCustomTab:AddSlider("AimbotFOVDegVis", {
     Callback = function(v) Config.AimbotFOVDeg = v end
 })
 
+aimbotCustomTab:AddDropdown('AimbotFOVPosition', {
+    Text = 'FOV position',
+    Values = { 'Center', 'Muzzle', 'Target' },
+    Default = Config.AimbotFOVPosition or 'Target',
+    Callback = function(v) Config.AimbotFOVPosition = v end
+})
+
 aimbotCustomTab:AddSlider("AimbotFOVOutlineThickness", {
     Text = "outline thickness",
     Default = 1.5, Min = 0.5, Max = 5, Rounding = 1,
@@ -18901,18 +19738,39 @@ aimbotCustomTab:AddSlider("AimbotFOVSpinSpd", {
     Text = 'Rage',
     NoUI = false,
 })
-local RageModeOpt = CORE:AddDropdown('RageMode', {
-            Values = { 'Polar', 'Orbit', 'Random', 'Random v2', 'Cross', 'Static', 'Pulse' },
+        local RageModeOpt = CORE:AddDropdown('RageMode', {
+            Values = { 'Polar', 'Orbit', 'Random', 'Random v2', 'Cross', 'Static', 'Pulse', 'Strobe' },
             Default = Config.RageMode or 'Polar',
             Text = 'Rage mode',
             Callback = function(v)
                 Config.RageMode = v
                 if Config.Rage then Rage.enable() end
-                -- force dep boxes to re-evaluate (Tabbox dropdowns often skip this)
                 pcall(function() if orbitDep and orbitDep.Update then orbitDep:Update(v) end end)
                 pcall(function() if staticDep and staticDep.Update then staticDep:Update(v) end end)
                 pcall(function() if pulseDep and pulseDep.Update then pulseDep:Update(v) end end)
+                pcall(function() if strobeDep and strobeDep.Update then strobeDep:Update(v) end end)
             end,
+        })
+
+        CORE:AddDropdown('RageAttackMode', {
+            Values = { 'Gun', 'Melee', 'Auto' },
+            Default = Config.RageAttackMode or 'Auto',
+            Text = 'Attack mode',
+            Tooltip = 'Gun = firearms only · Melee = knife only · Auto = gun then melee by range/ammo/deflect',
+            Callback = function(v) Config.RageAttackMode = v end,
+        })
+        CORE:AddSlider('RageMeleeReach', {
+            Text = 'Melee reach (Auto)',
+            Default = Config.RageMeleeReach or 18,
+            Min = 6, Max = 40, Rounding = 0,
+            Tooltip = 'When Auto: switch to melee if target is closer than this',
+            Callback = function(v) Config.RageMeleeReach = v end,
+        })
+        CORE:AddToggle('RagePreferMeleeOnDeflect', {
+            Text = 'Melee on deflect',
+            Default = Config.RagePreferMeleeOnDeflect ~= false,
+            Tooltip = 'Auto: prefer melee while target is deflecting (katana)',
+            Callback = function(v) Config.RagePreferMeleeOnDeflect = v and true or false end,
         })
 
         local orbitDep = CORE:AddDependencyBox()
@@ -18971,7 +19829,7 @@ local RageModeOpt = CORE:AddDropdown('RageMode', {
             Callback = function(v) Config.RageStaticJitter = v end,
         })
 
-                local pulseDep = CORE:AddDependencyBox()
+        local pulseDep = CORE:AddDependencyBox()
         pulseDep:AddSlider('RagePulseShootAttempts', {
             Text = 'Shoot attempts',
             Default = Config.RagePulseShootAttempts or 3,
@@ -19036,18 +19894,108 @@ local RageModeOpt = CORE:AddDropdown('RageMode', {
             Callback = function(v) Config.RagePulseAttackJitter = v end,
         })
 
-        -- SAME style as prediction: bind to Options registry, not a fragile local
+        local strobeDep = CORE:AddDependencyBox()
+
+        strobeDep:AddSlider('RageStrobeAttackSec', {
+            Text = 'Attack window',
+            Default = tonumber(Config.RageStrobeAttackSec) or 0.10,
+            Min = 0.03, Max = 0.40, Rounding = 2,
+            Callback = function(v) Config.RageStrobeAttackSec = v end,
+        })
+        strobeDep:AddSlider('RageStrobeShots', {
+            Text = 'Shoot attempts',
+            Default = tonumber(Config.RageStrobeShots) or 4,
+            Min = 1, Max = 14, Rounding = 0,
+            Callback = function(v) Config.RageStrobeShots = v end,
+        })
+
+        strobeDep:AddToggle('RageStrobeUseVoid', {
+            Text = 'Void between volleys',
+            Default = Config.RageStrobeUseVoid ~= false,
+            Tooltip = 'Hide in void between attacks. Off = soft sink under target.',
+            Callback = function(v) Config.RageStrobeUseVoid = v and true or false end,
+        })
+        local strobeVoidDep = strobeDep:AddDependencyBox()
+        strobeVoidDep:AddSlider('RageStrobeHideSec', {
+            Text = 'Void / hide time',
+            Default = tonumber(Config.RageStrobeHideSec) or 0.18,
+            Min = 0.05, Max = 0.60, Rounding = 2,
+            Callback = function(v) Config.RageStrobeHideSec = v end,
+        })
+        strobeVoidDep:SetupDependencies({ { Toggles.RageStrobeUseVoid, true } })
+
+        strobeDep:AddToggle('RageStrobeVoidOnMiss', {
+            Text = 'Void on miss / no part',
+            Default = Config.RageStrobeVoidOnMiss ~= false,
+            Callback = function(v) Config.RageStrobeVoidOnMiss = v and true or false end,
+        })
+
+        strobeDep:AddToggle('RageStrobeMultiSlot', {
+            Text = 'Cycle attack offsets',
+            Default = Config.RageStrobeMultiSlot ~= false,
+            Tooltip = 'Off = always behind. On = rotate behind / side / ring.',
+            Callback = function(v) Config.RageStrobeMultiSlot = v and true or false end,
+        })
+        local strobeSlotDep = strobeDep:AddDependencyBox()
+        strobeSlotDep:AddSlider('RageStrobeSlots', {
+            Text = 'Offset count',
+            Default = tonumber(Config.RageStrobeSlots) or 3,
+            Min = 2, Max = 6, Rounding = 0,
+            Callback = function(v) Config.RageStrobeSlots = v end,
+        })
+        strobeSlotDep:SetupDependencies({ { Toggles.RageStrobeMultiSlot, true } })
+
+        strobeDep:AddSlider('RageStrobeBehind', {
+            Text = 'Behind distance',
+            Default = tonumber(Config.RageStrobeBehind) or 1.2,
+            Min = 0.2, Max = 5, Rounding = 1,
+            Callback = function(v) Config.RageStrobeBehind = v end,
+        })
+        strobeDep:AddSlider('RageStrobeSide', {
+            Text = 'Side distance',
+            Default = tonumber(Config.RageStrobeSide) or 1.6,
+            Min = 0.2, Max = 6, Rounding = 1,
+            Callback = function(v) Config.RageStrobeSide = v end,
+        })
+        strobeDep:AddSlider('RageStrobeUp', {
+            Text = 'Up offset',
+            Default = tonumber(Config.RageStrobeUp) or 0.4,
+            Min = 0, Max = 4, Rounding = 1,
+            Callback = function(v) Config.RageStrobeUp = v end,
+        })
+        strobeDep:AddSlider('RageStrobeDown', {
+            Text = 'Down offset',
+            Default = tonumber(Config.RageStrobeDown) or 1.1,
+            Min = 0, Max = 6, Rounding = 1,
+            Callback = function(v) Config.RageStrobeDown = v end,
+        })
+
+        strobeDep:AddToggle('RageStrobeUseJitter', {
+            Text = 'Position jitter',
+            Default = Config.RageStrobeUseJitter ~= false,
+            Callback = function(v) Config.RageStrobeUseJitter = v and true or false end,
+        })
+        local strobeJitDep = strobeDep:AddDependencyBox()
+        strobeJitDep:AddSlider('RageStrobeJitter', {
+            Text = 'Jitter amount',
+            Default = tonumber(Config.RageStrobeJitter) or 0.25,
+            Min = 0, Max = 1.5, Rounding = 2,
+            Callback = function(v) Config.RageStrobeJitter = v end,
+        })
+        strobeJitDep:SetupDependencies({ { Toggles.RageStrobeUseJitter, true } })
+
         local modeOpt = Options.RageMode or RageModeOpt
         orbitDep:SetupDependencies({ { modeOpt, 'Orbit' } })
         staticDep:SetupDependencies({ { modeOpt, 'Static' } })
         pulseDep:SetupDependencies({ { modeOpt, 'Pulse' } })
+        strobeDep:SetupDependencies({ { modeOpt, 'Strobe' } })
 
-        -- initial hide if not on that mode
         pcall(function()
             local cur = (modeOpt and modeOpt.Value) or Config.RageMode or 'Polar'
             if orbitDep.Update then orbitDep:Update(cur) end
             if staticDep.Update then staticDep:Update(cur) end
             if pulseDep.Update then pulseDep:Update(cur) end
+            if strobeDep.Update then strobeDep:Update(cur) end
         end)
         CORE:AddDivider('Engine')
         CORE:AddDropdown('RageTargetPriority', {
@@ -19956,6 +20904,52 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
             Callback=function(v) Config.RageShieldBackstab = v end })
         B:AddToggle('RageKnifeBackstab', { Text='Force knife backstabs', Default=Config.RageKnifeBackstab,
             Callback=function(v) Config.RageKnifeBackstab = v end })
+        local KRBOX = Tabs.Rage:AddRightGroupbox('Knife Rage')
+        KRBOX:AddToggle('RageKnifeRage', {
+            Text = 'Knife Rage',
+            Default = Config.RageKnifeRage == true,
+            Tooltip = 'Desync behind enemy head and backstab (knife/melee only)',
+            Callback = function(v)
+                Config.RageKnifeRage = v and true or false
+                if v then
+                    pcall(function() if Rage._knifeRageStart then Rage._knifeRageStart() end end)
+                else
+                    pcall(function() if Rage._knifeRageStop then Rage._knifeRageStop() end end)
+                end
+            end,
+        }):AddKeyPicker('RageKnifeRageKey', {
+            Default = 'None',
+            Mode = 'Toggle',
+            Text = 'Knife Rage',
+            SyncToggleState = true,
+        })
+        KRBOX:AddToggle('RageKnifeRageForceEquip', {
+            Text = 'Force equip knife',
+            Default = Config.RageKnifeRageForceEquip ~= false,
+            Callback = function(v) Config.RageKnifeRageForceEquip = v and true or false end,
+        })
+        KRBOX:AddSlider('RageKnifeRageDist', {
+            Text = 'Behind distance',
+            Default = tonumber(Config.RageKnifeRageDist) or 3,
+            Min = 1, Max = 6, Rounding = 1,
+            Callback = function(v) Config.RageKnifeRageDist = v end,
+        })
+        KRBOX:AddSlider('RageKnifeRageJitter', {
+            Text = 'Desync jitter',
+            Default = tonumber(Config.RageKnifeRageJitter) or 0.35,
+            Min = 0, Max = 1.5, Rounding = 2,
+            Callback = function(v) Config.RageKnifeRageJitter = v end,
+        })
+        KRBOX:AddToggle('RageKnifeRagePreferReal', {
+            Text = 'Prefer real pos if already behind',
+            Default = Config.RageKnifeRagePreferReal ~= false,
+            Callback = function(v) Config.RageKnifeRagePreferReal = v and true or false end,
+        })
+        KRBOX:AddToggle('RageKnifeRageForceFace', {
+            Text = 'Force face target in payload',
+            Default = Config.RageKnifeRageForceFace ~= false,
+            Callback = function(v) Config.RageKnifeRageForceFace = v and true or false end,
+        })
         local DR = Tabs.Rage:AddRightGroupbox('Auto Collect Drops')
         DR:AddToggle('AutoCollectDrops', { Text='Auto collect drops', Default=(Config.AutoCollectDrops or false),
             Callback=function(v) Config.AutoCollectDrops = v end })
@@ -20026,8 +21020,8 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
         })
 
         VIS:AddDropdown('RageFOVPosition', {
-            Values = { 'Center', 'Muzzle' },
-            Default = Config.RageFOVPosition or 'Center',
+            Values = { 'Center', 'Muzzle', 'Target' },
+            Default = Config.RageFOVPosition or 'Target',
             Text = 'FOV position',
             Callback = function(v) Config.RageFOVPosition = v end
         })
@@ -20753,7 +21747,7 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
             Callback=function(v) Config.FXDamageNumbers = v end })
         WF:AddToggle('FXKillBanner', { Text='Kill banner', Default=Config.FXKillBanner,
             Callback=function(v) Config.FXKillBanner = v end })
-                ----------------------------------------------------------------
+        ----------------------------------------------------------------
         -- Target HUD
         ----------------------------------------------------------------
         do
@@ -20773,7 +21767,7 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
             main.Name = "Main"
             main.AnchorPoint = Vector2.new(0.5, 0)
             main.Position = UDim2.new(0.5, 0, 0.58, 0)
-            main.Size = UDim2.fromOffset(240, 64)
+            main.Size = UDim2.fromOffset(260, 78)
             main.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
             main.BackgroundTransparency = 0.12
             main.BorderSizePixel = 0
@@ -20781,20 +21775,39 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
             main.Parent = gui
             Instance.new("UICorner", main).CornerRadius = UDim.new(0, 8)
 
+            local accent = Instance.new("Frame")
+            accent.Name = "Accent"
+            accent.Size = UDim2.new(0, 3, 1, 0)
+            accent.BackgroundColor3 = Color3.fromRGB(0, 200, 255)
+            accent.BorderSizePixel = 0
+            accent.Parent = main
+
             local nameL = Instance.new("TextLabel")
             nameL.BackgroundTransparency = 1
-            nameL.Position = UDim2.fromOffset(12, 6)
-            nameL.Size = UDim2.new(1, -24, 0, 22)
+            nameL.Position = UDim2.fromOffset(14, 6)
+            nameL.Size = UDim2.new(1, -20, 0, 20)
             nameL.Font = Enum.Font.GothamBold
             nameL.TextSize = 15
             nameL.TextColor3 = Color3.fromRGB(240, 240, 240)
             nameL.TextXAlignment = Enum.TextXAlignment.Left
+            nameL.TextTruncate = Enum.TextTruncate.AtEnd
             nameL.Text = "None"
             nameL.Parent = main
 
+            local infoL = Instance.new("TextLabel")
+            infoL.BackgroundTransparency = 1
+            infoL.Position = UDim2.fromOffset(14, 26)
+            infoL.Size = UDim2.new(1, -20, 0, 16)
+            infoL.Font = Enum.Font.Gotham
+            infoL.TextSize = 12
+            infoL.TextColor3 = Color3.fromRGB(180, 180, 190)
+            infoL.TextXAlignment = Enum.TextXAlignment.Left
+            infoL.Text = ""
+            infoL.Parent = main
+
             local hpBg = Instance.new("Frame")
-            hpBg.Position = UDim2.fromOffset(12, 36)
-            hpBg.Size = UDim2.new(1, -24, 0, 12)
+            hpBg.Position = UDim2.fromOffset(14, 50)
+            hpBg.Size = UDim2.new(1, -28, 0, 14)
             hpBg.BackgroundColor3 = Color3.fromRGB(80, 80, 88)
             hpBg.BackgroundTransparency = 0.35
             hpBg.BorderSizePixel = 0
@@ -20817,13 +21830,60 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
             hpText.Text = "0"
             hpText.Parent = hpBg
 
+            local FONT_MAP = {
+                GothamBold = Enum.Font.GothamBold,
+                Gotham = Enum.Font.Gotham,
+                Code = Enum.Font.Code,
+                Arcade = Enum.Font.Arcade,
+                SourceSansBold = Enum.Font.SourceSansBold,
+                Ubuntu = Enum.Font.Ubuntu,
+            }
+
+            local function applyLayout()
+                local scale = math.clamp(tonumber(Config.TargetHUDScale) or 1, 0.7, 2)
+                local w = math.floor(260 * scale)
+                local h = math.floor(78 * scale)
+                main.Size = UDim2.fromOffset(w, h)
+
+                local pos = Config.TargetHUDPos or "Bottom Center"
+                if pos == "Top Center" then
+                    main.AnchorPoint = Vector2.new(0.5, 0)
+                    main.Position = UDim2.new(0.5, 0, 0.08, 0)
+                elseif pos == "Left" then
+                    main.AnchorPoint = Vector2.new(0, 0.5)
+                    main.Position = UDim2.new(0.02, 0, 0.5, 0)
+                elseif pos == "Right" then
+                    main.AnchorPoint = Vector2.new(1, 0.5)
+                    main.Position = UDim2.new(0.98, 0, 0.5, 0)
+                else -- Bottom Center
+                    main.AnchorPoint = Vector2.new(0.5, 0)
+                    main.Position = UDim2.new(0.5, 0, 0.58, 0)
+                end
+
+                main.BackgroundColor3 = Config.TargetHUDBgColor or Color3.fromRGB(20, 20, 20)
+                main.BackgroundTransparency = tonumber(Config.TargetHUDBgTransparency) or 0.12
+
+                local font = FONT_MAP[Config.TargetHUDFont or "GothamBold"] or Enum.Font.GothamBold
+                nameL.Font = font
+                nameL.TextSize = tonumber(Config.TargetHUDNameSize) or 15
+                nameL.TextColor3 = Config.TargetHUDNameColor or Color3.fromRGB(240, 240, 240)
+            end
+            applyLayout()
+
+            local function getWeaponName(plr)
+                local ch = plr and plr.Character
+                if not ch then return nil end
+                local tool = ch:FindFirstChildOfClass("Tool")
+                if tool then return tool.Name end
+                return nil
+            end
+
             RunService.RenderStepped:Connect(function()
                 if not Config.TargetHUD then
                     main.Visible = false
                     return
                 end
 
-                -- any combat lock, not only rage
                 local t =
                     State.RageTarget
                     or State.SilentLastTarget
@@ -20831,7 +21891,6 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
                     or State.AimbotTarget
                     or State.Target
 
-                -- drop stale targets
                 if t then
                     local ch = t.Character
                     local hum = ch and ch:FindFirstChildOfClass("Humanoid")
@@ -20845,27 +21904,116 @@ local RESOLVER = Tabs.Rage:AddLeftGroupbox('HvH Resolver')
                     return
                 end
 
+                applyLayout()
+
                 local ch = t.Character
                 local hum = ch:FindFirstChildOfClass("Humanoid")
+                local hrp = ch:FindFirstChild("HumanoidRootPart")
                 main.Visible = true
-                nameL.Text = t.DisplayName or t.Name  -- no [MANIP] here anymore
+                nameL.Text = t.DisplayName or t.Name
+
+                local bits = {}
+                if Config.TargetHUDShowDistance ~= false and hrp and lp.Character then
+                    local my = lp.Character:FindFirstChild("HumanoidRootPart")
+                    if my then
+                        bits[#bits + 1] = string.format("%.0fm", (hrp.Position - my.Position).Magnitude)
+                    end
+                end
+                if Config.TargetHUDShowWeapon ~= false then
+                    local w = getWeaponName(t)
+                    if w then bits[#bits + 1] = w end
+                end
+                infoL.Text = table.concat(bits, "  ·  ")
+                infoL.Visible = #bits > 0
+
                 local pct = math.clamp(hum.Health / math.max(hum.MaxHealth, 1), 0, 1)
                 hpFill.Size = UDim2.fromScale(pct, 1)
-                hpText.Text = string.format("%.0f / %.0f", hum.Health, hum.MaxHealth)
-                if pct > 0.5 then
-                    hpFill.BackgroundColor3 = Color3.fromRGB(80, 220, 120)
-                elseif pct > 0.25 then
-                    hpFill.BackgroundColor3 = Color3.fromRGB(230, 180, 50)
+                if Config.TargetHUDShowHPText ~= false then
+                    hpText.Text = string.format("%.0f / %.0f", hum.Health, hum.MaxHealth)
+                    hpText.Visible = true
                 else
-                    hpFill.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+                    hpText.Visible = false
+                end
+
+                if pct > 0.5 then
+                    hpFill.BackgroundColor3 = Config.TargetHUDHpHigh or Color3.fromRGB(80, 220, 120)
+                elseif pct > 0.25 then
+                    hpFill.BackgroundColor3 = Config.TargetHUDHpMid or Color3.fromRGB(230, 180, 50)
+                else
+                    hpFill.BackgroundColor3 = Config.TargetHUDHpLow or Color3.fromRGB(220, 60, 60)
                 end
             end)
 
-local TH = Tabs.HUD:AddLeftGroupbox("Target HUD")
+            local TH = Tabs.HUD:AddLeftGroupbox("Target HUD")
             TH:AddToggle("TargetHUD", {
-                Text = "Target HUD",
-                Default = Config.TargetHUD ~= false,
+                Text = "Enable",
+                Default = Config.TargetHUD == true,
                 Callback = function(v) Config.TargetHUD = v and true or false end,
+            })
+            TH:AddDropdown("TargetHUDPos", {
+                Values = { "Bottom Center", "Top Center", "Left", "Right" },
+                Default = Config.TargetHUDPos or "Bottom Center",
+                Text = "Position",
+                Callback = function(v) Config.TargetHUDPos = v end,
+            })
+            TH:AddSlider("TargetHUDScale", {
+                Text = "Scale",
+                Default = tonumber(Config.TargetHUDScale) or 1,
+                Min = 0.7, Max = 2, Rounding = 2,
+                Callback = function(v) Config.TargetHUDScale = v end,
+            })
+            TH:AddDropdown("TargetHUDFont", {
+                Values = { "GothamBold", "Gotham", "Code", "Arcade", "SourceSansBold", "Ubuntu" },
+                Default = Config.TargetHUDFont or "GothamBold",
+                Text = "Font",
+                Callback = function(v) Config.TargetHUDFont = v end,
+            })
+            TH:AddSlider("TargetHUDNameSize", {
+                Text = "Name size",
+                Default = tonumber(Config.TargetHUDNameSize) or 15,
+                Min = 11, Max = 24, Rounding = 0,
+                Callback = function(v) Config.TargetHUDNameSize = v end,
+            })
+            TH:AddToggle("TargetHUDShowHPText", {
+                Text = "Show HP text",
+                Default = Config.TargetHUDShowHPText ~= false,
+                Callback = function(v) Config.TargetHUDShowHPText = v and true or false end,
+            })
+            TH:AddToggle("TargetHUDShowDistance", {
+                Text = "Show distance",
+                Default = Config.TargetHUDShowDistance ~= false,
+                Callback = function(v) Config.TargetHUDShowDistance = v and true or false end,
+            })
+            TH:AddToggle("TargetHUDShowWeapon", {
+                Text = "Show weapon",
+                Default = Config.TargetHUDShowWeapon ~= false,
+                Callback = function(v) Config.TargetHUDShowWeapon = v and true or false end,
+            })
+            TH:AddSlider("TargetHUDBgTransparency", {
+                Text = "Background transparency",
+                Default = tonumber(Config.TargetHUDBgTransparency) or 0.12,
+                Min = 0, Max = 0.8, Rounding = 2,
+                Callback = function(v) Config.TargetHUDBgTransparency = v end,
+            })
+            TH:AddLabel("Background"):AddColorPicker("TargetHUDBgColor", {
+                Default = Config.TargetHUDBgColor or Color3.fromRGB(20, 20, 20),
+                Callback = function(c) Config.TargetHUDBgColor = c end,
+            })
+            TH:AddLabel("Name color"):AddColorPicker("TargetHUDNameColor", {
+                Default = Config.TargetHUDNameColor or Color3.fromRGB(240, 240, 240),
+                Callback = function(c) Config.TargetHUDNameColor = c end,
+            })
+            TH:AddLabel("HP high"):AddColorPicker("TargetHUDHpHigh", {
+                Default = Config.TargetHUDHpHigh or Color3.fromRGB(80, 220, 120),
+                Callback = function(c) Config.TargetHUDHpHigh = c end,
+            })
+            TH:AddLabel("HP mid"):AddColorPicker("TargetHUDHpMid", {
+                Default = Config.TargetHUDHpMid or Color3.fromRGB(230, 180, 50),
+                Callback = function(c) Config.TargetHUDHpMid = c end,
+            })
+            TH:AddLabel("HP low"):AddColorPicker("TargetHUDHpLow", {
+                Default = Config.TargetHUDHpLow or Color3.fromRGB(220, 60, 60),
+                Callback = function(c) Config.TargetHUDHpLow = c end,
             })
         end
     end
@@ -21390,158 +22538,467 @@ end
             })
         end
 
-            ----------------------------------------------------------------
-    -- Gun Mods
-    ----------------------------------------------------------------
     do
-        Config.NoRecoil   = Config.NoRecoil == true
-        Config.NoSpread   = Config.NoSpread == true
-        Config.EquipSpeed = tonumber(Config.EquipSpeed) or 1
+        Config.NoRecoil       = Config.NoRecoil == true
+        Config.NoSpread       = Config.NoSpread == true
+        Config.EquipSpeed     = tonumber(Config.EquipSpeed) or 1
+        Config.FastShoot      = Config.FastShoot == true
+        Config.FireRatePct    = tonumber(Config.FireRatePct) or 100
+        Config.FastProjectile = Config.FastProjectile == true
+        Config.FullAuto       = Config.FullAuto == true
+        Config.AlwaysBackstab = Config.AlwaysBackstab == true
+        Config.GrenadeExplodeImpact = Config.GrenadeExplodeImpact == true
+        Config.GrenadeExplodeThrow  = Config.GrenadeExplodeThrow == true
+        Config.GrenadeNoFuse        = Config.GrenadeNoFuse == true
 
-        local gunModState = {
-            patchedItems = setmetatable({}, { __mode = "k" }),
-            spreadHooked = false,
-            spreadBase   = nil,
+        local weaponState = {
+            Installed = false,
+            InfoCache = setmetatable({}, { __mode = "k" }),
+            ProjCache = setmetatable({}, { __mode = "k" }),
+            FullAutoItems = setmetatable({}, { __mode = "k" }),
+            BackstabId = 0,
+            ClientItem = nil,
+            OriginalInput = nil,
+            Throwable = nil,
+            OriginalGrenadeFinishShooting = nil,
+            OriginalGrenadeFinishAiming = nil,
         }
 
-        local function getLocalFighter()
-            return Rivals.Fighter and Rivals.Fighter.LocalFighter
+        local COOLDOWN_KEYS = {
+            "ShootCooldown", "QuickShotCooldown", "SpinCooldown", "DashCooldown",
+            "Cooldown", "BuildCooldown", "AttackCooldown", "HeavyAttackCooldown", "BurstCooldown",
+        }
+
+        local function rememberInfo(info, key)
+            if type(info) ~= "table" or info[key] == nil then return nil end
+            local c = weaponState.InfoCache[info]
+            if not c then
+                c = {}
+                weaponState.InfoCache[info] = c
+            end
+            if c[key] == nil then c[key] = info[key] end
+            return c[key]
         end
 
-        local function patchItemRecoil(item)
-            if not item or gunModState.patchedItems[item] then return end
-            gunModState.patchedItems[item] = true
+        local function hasInfoOptions()
+            return Config.FastShoot
+                or Config.NoRecoil
+                or Config.NoSpread
+                or (tonumber(Config.FireRatePct) or 100) ~= 100
+                or (tonumber(Config.EquipSpeed) or 1) > 1
+        end
 
-            if type(item._Recoil) == "function" then
-                local oldRecoil = item._Recoil
-                item.__vertexOldRecoil = oldRecoil
-                item._Recoil = function(self, scale, ...)
-                    if Config.NoRecoil then
-                        return
+        local function applyInfoOptions(item)
+            local info = item and item.Info
+            if type(info) ~= "table" then return end
+
+            local fireRate = math.max((tonumber(Config.FireRatePct) or 100) / 100, 0.01)
+            local fast = Config.FastShoot == true
+
+            local recoil = rememberInfo(info, "ShootRecoil")
+            if recoil ~= nil then
+                info.ShootRecoil = (Config.NoRecoil or fast) and 0 or recoil
+            end
+
+            for _, key in ipairs({ "ShootSpread", "Spread", "MaxSpread", "MinSpread", "Accuracy" }) do
+                local orig = rememberInfo(info, key)
+                if orig ~= nil and type(orig) == "number" then
+                    info[key] = (Config.NoSpread or fast) and 0 or orig
+                end
+            end
+
+            local pSpeed = rememberInfo(info, "ProjectileSpeed")
+            if pSpeed ~= nil then
+                info.ProjectileSpeed = fast and 99999999 or pSpeed
+            end
+
+            for _, key in ipairs(COOLDOWN_KEYS) do
+                local original = rememberInfo(info, key)
+                if original ~= nil and type(original) == "number" then
+                    if fast then
+                        info[key] = 0
+                    elseif fireRate ~= 1 and (key == "ShootCooldown" or key == "QuickShotCooldown"
+                        or key == "BurstCooldown" or key == "AttackCooldown" or key == "Cooldown") then
+                        info[key] = original / fireRate
+                    else
+                        info[key] = original
                     end
-                    return oldRecoil(self, scale, ...)
+                end
+            end
+
+            local equip = rememberInfo(info, "EquipDuration")
+            if equip ~= nil then
+                local mult = math.clamp(tonumber(Config.EquipSpeed) or 1, 1, 10)
+                info.EquipDuration = mult <= 1 and equip or (equip / mult)
+            end
+        end
+
+        local function restoreInfo()
+            for info, values in pairs(weaponState.InfoCache) do
+                if type(info) == "table" then
+                    for k, v in pairs(values) do
+                        pcall(function() info[k] = v end)
+                    end
                 end
             end
         end
 
-        local function applyInfoMods(item)
-            if not item or not item.Info then return end
+        local function restoreFastProjectile()
+            for item, reloadLength in pairs(weaponState.ProjCache) do
+                pcall(rawset, item, "ReloadLength", reloadLength)
+            end
+        end
 
-            -- ShootRecoil: save once, zero when on, restore when off
+        local function applyFastProjectile()
+            if not Config.FastProjectile then
+                restoreFastProjectile()
+                return
+            end
             pcall(function()
-                if item.Info.ShootRecoil ~= nil then
-                    if item.__vertexOrigShootRecoil == nil then
-                        item.__vertexOrigShootRecoil = item.Info.ShootRecoil
-                    end
-                    if Config.NoRecoil then
-                        item.Info.ShootRecoil = 0
-                    else
-                        item.Info.ShootRecoil = item.__vertexOrigShootRecoil
-                    end
-                end
-            end)
-
-            -- spread Info fields
-            pcall(function()
-                local info = item.Info
-                for _, key in ipairs({ "ShootSpread", "Spread", "MaxSpread", "MinSpread", "Accuracy" }) do
-                    if info[key] ~= nil and type(info[key]) == "number" then
-                        local origKey = "__vertexOrig" .. key
-                        if item[origKey] == nil then
-                            item[origKey] = info[key]
+                local ItemLibrary = Rivals.ItemLib
+                    or safeRequire(ReplicatedStorage.Modules.ItemLibrary, 3)
+                local Items = ItemLibrary and rawget(ItemLibrary, "Items")
+                if not Items then return end
+                local allow = { Bow = true, Daggers = true, Slingshot = true }
+                for _, item in pairs(Items) do
+                    local name = item and item.Name
+                    if allow[name] and rawget(item, "ReloadLength") ~= nil then
+                        if weaponState.ProjCache[item] == nil then
+                            weaponState.ProjCache[item] = rawget(item, "ReloadLength")
                         end
-                        if Config.NoSpread then
-                            info[key] = 0
-                        else
-                            info[key] = item[origKey]
-                        end
-                    end
-                end
-            end)
-
-            -- equip speed
-            pcall(function()
-                if item.Info.EquipDuration ~= nil then
-                    if item.__vertexOrigEquipDuration == nil then
-                        item.__vertexOrigEquipDuration = item.Info.EquipDuration
-                    end
-                    local mult = math.clamp(tonumber(Config.EquipSpeed) or 1, 1, 10)
-                    if mult <= 1 then
-                        item.Info.EquipDuration = item.__vertexOrigEquipDuration
-                    else
-                        item.Info.EquipDuration = item.__vertexOrigEquipDuration / mult
+                        rawset(item, "ReloadLength", name == "Daggers" and 0.09 or 0)
                     end
                 end
             end)
         end
 
-        local function gunModsStep()
-            local lf = getLocalFighter()
+        local function isLocalItem(item)
+            local fighter = item and item.ClientFighter
+            if not fighter then return false end
+            if fighter.IsLocalPlayer == true then return true end
+            return fighter.Player == lp
+        end
+
+        local function isThrowableItem(item)
+            local info = item and item.Info
+            if type(info) ~= "table" then return false end
+            return info.DetonateDelay ~= nil
+                or info.ThrowForceMin ~= nil
+                or info.LobForceMin ~= nil
+        end
+
+        local function startBackstabCameraLoop(duration)
+            if not Config.AlwaysBackstab then return end
+            weaponState.BackstabId = weaponState.BackstabId + 1
+            local myId = weaponState.BackstabId
+            local util = Rivals.Util
+            local camRemote
+            pcall(function()
+                camRemote = ReplicatedStorage.Remotes.Replication.Fighter.UpdateCameraRotation
+            end)
+            if not util or not util.EncodeCameraRotation or not camRemote then return end
+
+            task.spawn(function()
+                local tEnd = tick() + math.max(duration or 0.35, 0.35)
+                while tick() < tEnd and Config.AlwaysBackstab and myId == weaponState.BackstabId do
+                    local yaw = 0
+                    pcall(function()
+                        local camCtrl = safeRequire(lp.PlayerScripts.Controllers.CameraController, 1)
+                        yaw = (camCtrl and camCtrl.Rotation and camCtrl.Rotation.Y) or 0
+                    end)
+                    pcall(function()
+                        camRemote:FireServer(
+                            util:EncodeCameraRotation(Vector2.new(0, yaw + math.rad(180))),
+                            nil
+                        )
+                    end)
+                    task.wait()
+                end
+            end)
+        end
+
+        -- Harion full auto: from Input("StartShooting"), not UserInputService
+        local function startFullAuto(self, input)
+            if not Config.FullAuto or input ~= "StartShooting" or not isLocalItem(self) then
+                return
+            end
+            if weaponState.FullAutoItems[self] then return end
+            weaponState.FullAutoItems[self] = true
+            task.spawn(function()
+                while Config.FullAuto and weaponState.FullAutoItems[self] do
+                    -- stop when game stops calling us / item gone
+                    if not self or not self.Info then break end
+                    pcall(function()
+                        if self.StartShooting then
+                            self:StartShooting()
+                        end
+                    end)
+                    task.wait(0.03)
+                end
+                weaponState.FullAutoItems[self] = nil
+            end)
+        end
+
+        local function applyGrenadeResultOptions(self, result)
+            if not isLocalItem(self) or not isThrowableItem(self) or not result[1] then
+                return result
+            end
+            local action = result[2]
+            if action ~= "FinishShooting" and action ~= "FinishAiming" then
+                return result
+            end
+            if Config.GrenadeExplodeThrow then
+                result[5] = 0.15
+            elseif Config.GrenadeExplodeImpact then
+                result[5] = 0.05
+            elseif Config.GrenadeNoFuse then
+                result[5] = 999999
+            end
+            return result
+        end
+
+        local function installWeaponHooks()
+            if weaponState.Installed then return end
+
+            -- resolve modules
+            pcall(resolveWeaponModules)
+            local PlayerScripts = lp:FindFirstChild("PlayerScripts")
+            local modules = PlayerScripts and PlayerScripts:FindFirstChild("Modules")
+            local itemTypes = modules and modules:FindFirstChild("ItemTypes")
+
+            -- ClientItem.Input (Harion full auto + apply Info)
+            pcall(function()
+                local path = modules
+                    and modules:FindFirstChild("ClientReplicatedClasses")
+                    and modules.ClientReplicatedClasses:FindFirstChild("ClientFighter")
+                    and modules.ClientReplicatedClasses.ClientFighter:FindFirstChild("ClientItem")
+                local clientItemMod = path and safeRequire(path, 3)
+                if clientItemMod and type(clientItemMod.Input) == "function" and not clientItemMod.__vertexInputHooked then
+                    weaponState.ClientItem = clientItemMod
+                    weaponState.OriginalInput = clientItemMod.Input
+                    clientItemMod.__vertexInputHooked = true
+                    clientItemMod.Input = function(self, input, ...)
+                        if hasInfoOptions() and isLocalItem(self) then
+                            applyInfoOptions(self)
+                        end
+                        local result = { weaponState.OriginalInput(self, input, ...) }
+                        if Config.FullAuto and input == "StartShooting" and isLocalItem(self) then
+                            startFullAuto(self, input)
+                        end
+                        if input == "StopShooting" or input == "FinishShooting" then
+                            weaponState.FullAutoItems[self] = nil
+                        end
+                        return unpack(result)
+                    end
+                end
+            end)
+
+            -- Gun.StartShooting — no spread flag (Harion result[4] = true)
+            if Rivals.Gun and type(Rivals.Gun.StartShooting) == "function" and not Rivals.Gun.__vertexSpreadHooked then
+                local oldStart = Rivals.Gun.StartShooting
+                Rivals.Gun.__vertexSpreadHooked = true
+                Rivals.Gun.__vertexOldStartShooting = oldStart
+                shared._LH_GunOrig = shared._LH_GunOrig or oldStart
+                Rivals.Gun.StartShooting = function(self, ...)
+                    if hasInfoOptions() and isLocalItem(self) then
+                        applyInfoOptions(self)
+                    end
+                    local result = { oldStart(self, ...) }
+                    if Config.NoSpread and isLocalItem(self) and typeof(result[3]) == "table" then
+                        result[4] = true
+                    end
+                    return unpack(result)
+                end
+            end
+
+            -- Melee StartShooting — apply cooldowns
+            if Rivals.Melee and type(Rivals.Melee.StartShooting) == "function" and not Rivals.Melee.__vertexHooked then
+                local oldMelee = Rivals.Melee.StartShooting
+                Rivals.Melee.__vertexHooked = true
+                Rivals.Melee.StartShooting = function(self, ...)
+                    if hasInfoOptions() and isLocalItem(self) then
+                        applyInfoOptions(self)
+                    end
+                    return oldMelee(self, ...)
+                end
+            end
+
+            -- Knife always backstab
+            if Rivals.Knife and type(Rivals.Knife.StartAiming) == "function" and not Rivals.Knife.__vertexAimHooked then
+                local oldAim = Rivals.Knife.StartAiming
+                Rivals.Knife.__vertexAimHooked = true
+                Rivals.Knife.StartAiming = function(self, ...)
+                    if isLocalItem(self) then
+                        if hasInfoOptions() then applyInfoOptions(self) end
+                        if Config.AlwaysBackstab then
+                            local d = (self.Info and self.Info.AttackDelay) or 0.35
+                            startBackstabCameraLoop(d)
+                        end
+                    end
+                    return oldAim(self, ...)
+                end
+            end
+
+            -- Throwable / grenade fuse (Harion)
+            pcall(function()
+                if not itemTypes then return end
+                local th = itemTypes:FindFirstChild("Throwable") or itemTypes:FindFirstChild("Grenade")
+                local mod = th and safeRequire(th, 3)
+                if not mod then return end
+                weaponState.Throwable = mod
+                if type(mod.FinishShooting) == "function" and not mod.__vertexGrenadeHooked then
+                    mod.__vertexGrenadeHooked = true
+                    weaponState.OriginalGrenadeFinishShooting = mod.FinishShooting
+                    mod.FinishShooting = function(self, ...)
+                        local result = { weaponState.OriginalGrenadeFinishShooting(self, ...) }
+                        result = applyGrenadeResultOptions(self, result)
+                        return unpack(result)
+                    end
+                end
+                if type(mod.FinishAiming) == "function" and not mod.__vertexGrenadeAimHooked then
+                    mod.__vertexGrenadeAimHooked = true
+                    weaponState.OriginalGrenadeFinishAiming = mod.FinishAiming
+                    mod.FinishAiming = function(self, ...)
+                        local result = { weaponState.OriginalGrenadeFinishAiming(self, ...) }
+                        result = applyGrenadeResultOptions(self, result)
+                        return unpack(result)
+                    end
+                end
+            end)
+
+            weaponState.Installed = true
+        end
+
+        local function refreshAll()
+            local lf = Rivals.Fighter and Rivals.Fighter.LocalFighter
             if lf and lf.Items then
                 for _, item in pairs(lf.Items) do
-                    patchItemRecoil(item)
-                    applyInfoMods(item)
+                    applyInfoOptions(item)
                 end
             end
-        end
-
-        local function restoreAllRecoil()
-            local lf = getLocalFighter()
-            if not lf or not lf.Items then return end
-            for _, item in pairs(lf.Items) do
-                pcall(function()
-                    if item.Info and item.__vertexOrigShootRecoil ~= nil then
-                        item.Info.ShootRecoil = item.__vertexOrigShootRecoil
-                    end
-                end)
-                applyInfoMods(item)
+            if lf and lf.EquippedItem then
+                applyInfoOptions(lf.EquippedItem)
             end
+            applyFastProjectile()
         end
 
+        task.defer(function()
+            pcall(installWeaponHooks)
+            pcall(refreshAll)
+        end)
+        lp.CharacterAdded:Connect(function()
+            task.wait(0.5)
+            weaponState.Installed = false -- allow re-hook if modules refreshed
+            pcall(installWeaponHooks)
+            pcall(refreshAll)
+        end)
+
+        ----------------------------------------------------------------
+        -- UI
+        ----------------------------------------------------------------
         local gm = Tabs.Misc:AddRightGroupbox('gun mods')
 
         gm:AddToggle('GunNoRecoil', {
             Text = 'No recoil',
             Default = Config.NoRecoil,
-            Tooltip = 'Removes camera kick when shooting',
             Callback = function(v)
                 Config.NoRecoil = v and true or false
-                if not Config.NoRecoil then
-                    pcall(restoreAllRecoil)
-                end
-                pcall(gunModsStep)
+                if not v then pcall(restoreInfo) end
+                pcall(refreshAll)
             end
         })
-
         gm:AddToggle('GunNoSpread', {
             Text = 'No spread',
-            Default = Config.NoSpread == true,
-            Tooltip = 'Keeps shots tight — bullets stay accurate instead of spraying',
+            Default = Config.NoSpread,
+            Tooltip = 'Info spread + StartShooting accuracy flag',
             Callback = function(v)
                 Config.NoSpread = v and true or false
-                pcall(gunModsStep)
+                pcall(installWeaponHooks)
+                pcall(refreshAll)
             end
         })
-
+        gm:AddToggle('GunFastShoot', {
+            Text = 'Fast shoot',
+            Default = Config.FastShoot,
+            Tooltip = 'Zero cooldowns / recoil / spread, boost projectile speed',
+            Callback = function(v)
+                Config.FastShoot = v and true or false
+                if not v then pcall(restoreInfo) end
+                pcall(refreshAll)
+            end
+        })
+        gm:AddSlider('GunFireRate', {
+            Text = 'Firerate',
+            Default = Config.FireRatePct or 100,
+            Min = 1, Max = 100, Rounding = 0, Suffix = '%',
+            Callback = function(v)
+                Config.FireRatePct = v
+                pcall(refreshAll)
+            end
+        })
+        gm:AddToggle('GunFastProjectile', {
+            Text = 'Fast projectile',
+            Default = Config.FastProjectile,
+            Tooltip = 'Bow / Daggers / Slingshot ReloadLength',
+            Callback = function(v)
+                Config.FastProjectile = v and true or false
+                if not v then pcall(restoreFastProjectile) else pcall(applyFastProjectile) end
+            end
+        })
+        gm:AddToggle('GunFullAuto', {
+            Text = 'Full auto',
+            Default = Config.FullAuto,
+            Tooltip = 'Harion ClientItem.Input StartShooting loop (no UserInput)',
+            Callback = function(v)
+                Config.FullAuto = v and true or false
+                if not v then table.clear(weaponState.FullAutoItems) end
+                pcall(installWeaponHooks)
+            end
+        })
+        gm:AddToggle('GunAlwaysBackstab', {
+            Text = 'Always backstab',
+            Default = Config.AlwaysBackstab,
+            Tooltip = '180° camera yaw while knifing',
+            Callback = function(v)
+                Config.AlwaysBackstab = v and true or false
+                pcall(installWeaponHooks)
+            end
+        })
         gm:AddSlider('GunEquipSpeed', {
             Text = 'Equip speed',
             Default = Config.EquipSpeed or 1,
-            Min = 1,
-            Max = 10,
-            Rounding = 1,
-            Suffix = 'x',
-            Tooltip = 'How fast you pull out weapons (higher = faster)',
+            Min = 1, Max = 10, Rounding = 1, Suffix = 'x',
             Callback = function(v)
                 Config.EquipSpeed = v
-                pcall(gunModsStep)
+                pcall(refreshAll)
+            end
+        })
+        gm:AddToggle('GunGrenadeImpact', {
+            Text = 'Grenade: explode on impact',
+            Default = Config.GrenadeExplodeImpact,
+            Callback = function(v)
+                Config.GrenadeExplodeImpact = v and true or false
+                pcall(installWeaponHooks)
+            end
+        })
+        gm:AddToggle('GunGrenadeThrow', {
+            Text = 'Grenade: explode on throw',
+            Default = Config.GrenadeExplodeThrow,
+            Callback = function(v)
+                Config.GrenadeExplodeThrow = v and true or false
+                pcall(installWeaponHooks)
+            end
+        })
+        gm:AddToggle('GunGrenadeNoFuse', {
+            Text = 'Grenade: remove fuse',
+            Default = Config.GrenadeNoFuse,
+            Callback = function(v)
+                Config.GrenadeNoFuse = v and true or false
+                pcall(installWeaponHooks)
             end
         })
     end
 
-                ----------------------------------------------------------------
-        -- Misc: Bullet Tracers (standalone)
-        -- Does NOT use HUD FXBeamTracer
-        ----------------------------------------------------------------
         do
             _G.Features = _G.Features or {}
             _G.Features.BulletTracers = _G.Features.BulletTracers or {
@@ -23236,40 +24693,185 @@ end)()
             end
         })
     end
+
+            local utilBox = Tabs.Misc:AddLeftGroupbox('Utility Ports')
+
+        utilBox:AddToggle('Blink', {
+            Text = 'Blink',
+            Default = Config.Blink == true,
+            Tooltip = 'Hold physics packets (desync)',
+            Callback = function(v)
+                Config.Blink = v and true or false
+                if v then _G.VertexBlink.start() else _G.VertexBlink.stop() end
+            end
+        }):AddKeyPicker('BlinkKey', {
+            Default = 'None', Mode = 'Toggle', Text = 'Blink', SyncToggleState = true
+        })
+        utilBox:AddDropdown('BlinkType', {
+            Text = 'Blink type',
+            Values = { 'Movement Only', 'All' },
+            Default = Config.BlinkType or 'Movement Only',
+            Callback = function(v) Config.BlinkType = v end
+        })
+        utilBox:AddToggle('BlinkAutoSend', {
+            Text = 'Blink auto send',
+            Default = Config.BlinkAutoSend == true,
+            Callback = function(v) Config.BlinkAutoSend = v and true or false end
+        })
+        utilBox:AddSlider('BlinkSendThreshold', {
+            Text = 'Send threshold',
+            Default = tonumber(Config.BlinkSendThreshold) or 0.5,
+            Min = 0, Max = 1, Rounding = 2,
+            Callback = function(v) Config.BlinkSendThreshold = v end
+        })
+
+        utilBox:AddToggle('Phase', {
+            Text = 'Phase',
+            Default = Config.Phase == true,
+            Tooltip = 'Walk through thin walls',
+            Callback = function(v)
+                Config.Phase = v and true or false
+                if v then _G.VertexPhase.start() else _G.VertexPhase.stop() end
+            end
+        }):AddKeyPicker('PhaseKey', {
+            Default = 'None', Mode = 'Toggle', Text = 'Phase', SyncToggleState = true
+        })
+        utilBox:AddDropdown('PhaseMode', {
+            Text = 'Phase mode',
+            Values = { 'Character', 'CFrame', 'Motor', 'FFlag' },
+            Default = Config.PhaseMode or 'Character',
+            Callback = function(v) Config.PhaseMode = v end
+        })
+        utilBox:AddSlider('PhaseWallSize', {
+            Text = 'Wall size',
+            Default = tonumber(Config.PhaseWallSize) or 5,
+            Min = 1, Max = 20, Rounding = 0,
+            Callback = function(v) Config.PhaseWallSize = v end
+        })
+
+        utilBox:AddToggle('ProjectileTP', {
+            Text = 'Projectile TP',
+            Default = Config.ProjectileTP == true,
+            Tooltip = 'Snap daggers/bow/slingshot to nearest head',
+            Callback = function(v)
+                Config.ProjectileTP = v and true or false
+                if v then _G.VertexProjectileTP.start() else _G.VertexProjectileTP.stop() end
+            end
+        })
+
+        utilBox:AddToggle('ChatSpam', {
+            Text = 'Chat spam',
+            Default = Config.ChatSpam == true,
+            Callback = function(v)
+                Config.ChatSpam = v and true or false
+                if v then _G.VertexChatSpam.start() else _G.VertexChatSpam.stop() end
+            end
+        })
+        utilBox:AddDropdown('ChatSpamMode', {
+            Text = 'Spam mode',
+            Values = { 'custom', 'smol', 'corny', 'wholesome' },
+            Default = Config.ChatSpamMode or 'custom',
+            Callback = function(v) Config.ChatSpamMode = v end
+        })
+        utilBox:AddInput('ChatSpamText', {
+            Text = 'Custom text',
+            Default = Config.ChatSpamText or 'Vertex.lol',
+            Callback = function(v) Config.ChatSpamText = v end
+        })
+        utilBox:AddSlider('ChatSpamDelay', {
+            Text = 'Spam delay',
+            Default = tonumber(Config.ChatSpamDelay) or 1.5,
+            Min = 0.4, Max = 5, Rounding = 1,
+            Callback = function(v) Config.ChatSpamDelay = v end
+        })
+
+        utilBox:AddToggle('ShootSound', {
+            Text = 'Custom shoot sound',
+            Default = Config.ShootSound == true,
+            Callback = function(v) Config.ShootSound = v and true or false end
+        })
+        utilBox:AddInput('ShootSoundId', {
+            Text = 'Sound asset id',
+            Default = Config.ShootSoundId or '4049646104',
+            Callback = function(v) Config.ShootSoundId = v end
+        })
+        utilBox:AddSlider('ShootSoundVolume', {
+            Text = 'Shoot volume',
+            Default = tonumber(Config.ShootSoundVolume) or 0.5,
+            Min = 0, Max = 5, Rounding = 1,
+            Callback = function(v) Config.ShootSoundVolume = v end
+        })
+        utilBox:AddSlider('ShootSoundSpeed', {
+            Text = 'Shoot speed',
+            Default = tonumber(Config.ShootSoundSpeed) or 1,
+            Min = 0.1, Max = 5, Rounding = 1,
+            Callback = function(v) Config.ShootSoundSpeed = v end
+        })
+        utilBox:AddButton('Preview shoot sound', function()
+            if _G.VertexShootSound then _G.VertexShootSound.play() end
+        end)
+
+        utilBox:AddToggle('CustomCrosshair', {
+            Text = 'Custom crosshair',
+            Default = Config.CustomCrosshair == true,
+            Callback = function(v)
+                Config.CustomCrosshair = v and true or false
+                if v then _G.VertexCrosshair.apply() else _G.VertexCrosshair.destroy() end
+            end
+        })
+        utilBox:AddInput('CrosshairImageUrl', {
+            Text = 'Crosshair URL / rbxassetid',
+            Default = Config.CrosshairImageUrl or '',
+            Tooltip = 'rbxassetid://123 or direct image URL',
+            Callback = function(v)
+                Config.CrosshairImageUrl = v
+                if Config.CustomCrosshair then _G.VertexCrosshair.apply() end
+            end
+        })
+        utilBox:AddSlider('CrosshairSize', {
+            Text = 'Crosshair size',
+            Default = tonumber(Config.CrosshairSize) or 32,
+            Min = 8, Max = 128, Rounding = 0,
+            Callback = function(v)
+                Config.CrosshairSize = v
+                if Config.CustomCrosshair then _G.VertexCrosshair.apply() end
+            end
+        })
+        utilBox:AddToggle('CrosshairRotate', {
+            Text = 'Rotate crosshair',
+            Default = Config.CrosshairRotate == true,
+            Callback = function(v)
+                Config.CrosshairRotate = v and true or false
+                if Config.CustomCrosshair then _G.VertexCrosshair.apply() end
+            end
+        })
+        utilBox:AddToggle('CrosshairDisableGame', {
+            Text = 'Hide game crosshair',
+            Default = Config.CrosshairDisableGame ~= false,
+            Callback = function(v) Config.CrosshairDisableGame = v and true or false end
+        })
     
         do
-        ----------------------------------------------------------------
-        -- Anti Aim
+                ----------------------------------------------------------------
+        -- Anti Aim (Harion-style: pitch / yaw / underground + camera remote)
         ----------------------------------------------------------------
         local settings = {
-            enabled = false,
-            yawtype = "jitter",
-            pitchtype = "down",
-            angletype = "none",
-            customangle = 0,
-            customyaw = 0,
-            custompitch = 0,
-            pitchAngle = 89,
-            yawAngle = 180,
-            minspeed = 10,
-            maxspeed = 20,
-            minangle = 30,
-            maxangle = 60,
-            randomangle = false,
-            jitterfreq = 8,
-            microJitter = true,
-            applyBody = true,
+            enabled     = false,
+            pitch       = "disabled",
+            yaw         = "disabled",
+            underground = false,
+            applyBody   = false,
+            microJitter = false,
+            spinSpeed   = 720,
+            -- angles (degrees)
+            pitchAngle  = 89,   -- strength for up/down (1–89 typical; Elisium often ~15–30)
+            pitchOffset = 0,    -- extra pitch add (-89..89)
+            yawAngle    = 180,  -- backwards offset / jitter amp (1–360)
         }
 
-        local statemanager = {
-            smoothyaw = 0,
-            smoothpitch = 0,
-            framecounter = 0,
-        }
-
-        local underground_enabled = false
         local underground_oldpos = nil
-        local headBackwardsMotors, headBackwardsOrigC0 = {}, {}
+        local _aaCamTask = nil
+        local _aaLastT = tick()
 
         local camRemote
         pcall(function()
@@ -23284,10 +24886,6 @@ end)()
             return nil
         end
 
-        local function getLocalFighter()
-            return Rivals.Fighter and Rivals.Fighter.LocalFighter
-        end
-
         local function getCameraController()
             local ok, mod = pcall(function()
                 return safeRequire(lp.PlayerScripts.Controllers.CameraController, 5)
@@ -23295,543 +24893,728 @@ end)()
             return ok and mod or nil
         end
 
-        local camera_controller = getCameraController()
+        -- Harion-style pitch/yaw from config
+        local function getAntiAimCameraRotation()
+            local camCtrl = getCameraController()
+            local current = (camCtrl and camCtrl.Rotation) or Vector2.zero
+            local pitch = current.X or 0
+            local yaw   = current.Y or 0
 
-        local function updateHeadBackwardsMotors()
-            headBackwardsMotors = {}
-            headBackwardsOrigC0 = {}
-            local character = lp.Character
-            if not character then return end
-            for _, v in pairs(character:GetDescendants()) do
-                if v:IsA("Motor6D") then
-                    headBackwardsMotors[v.Name] = v
-                    headBackwardsOrigC0[v] = v.C0
-                end
+            local pm = settings.pitch or "disabled"
+            local ym = settings.yaw or "disabled"
+
+            local pAng = math.clamp(tonumber(settings.pitchAngle) or 89, 1, 89)
+            local pOff = math.clamp(tonumber(settings.pitchOffset) or 0, -180, 180)
+            local yAng = math.clamp(tonumber(settings.yawAngle) or 180, 1, 360)
+
+            if pm == "up" then
+                pitch = math.rad(-pAng + pOff)
+            elseif pm == "down" then
+                -- Harion-style extreme down can go past 89 on the remote; keep pAng for strength
+                pitch = math.rad(math.clamp(pAng + pOff, -179, 179))
+            elseif pm == "zero" then
+                pitch = math.rad(pOff)
+            elseif pm == "random" then
+                pitch = math.rad(math.random(-pAng, pAng) + pOff)
             end
-        end
 
-        local function resetHeadBackwardsMotors()
-            for motor, origC0 in pairs(headBackwardsOrigC0) do
-                if motor and motor.Parent then
-                    motor.C0 = origC0
-                end
-            end
-        end
-
-        local function curweap2()
-            local viewModels = Workspace:FindFirstChild("ViewModels")
-            if not viewModels then return nil end
-            local firstPerson = viewModels:FindFirstChild("FirstPerson")
-            if not firstPerson then return nil end
-            for _, child in ipairs(firstPerson:GetChildren()) do
-                local parts = {}
-                for part in child.Name:gmatch("[^-]+") do
-                    parts[#parts + 1] = part:match("^%s*(.-)%s*$")
-                end
-                if #parts >= 2 then return parts[2] end
-            end
-            return nil
-        end
-
-        local function getFloorBelowPosition(pos)
-            local local_fighter = getLocalFighter()
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterType = Enum.RaycastFilterType.Exclude
-            if local_fighter and local_fighter.Entity and local_fighter.Entity.RootPart then
-                raycastParams.FilterDescendantsInstances = { local_fighter.Entity.RootPart.Parent }
-            end
-            local result = Workspace:Raycast(pos, Vector3.new(0, -500, 0), raycastParams)
-            if result then
-                local underY = result.Position.Y - math.max(2.5, (result.Instance and result.Instance.Size and result.Instance.Size.Y * 0.5) or 2.5)
-                return CFrame.new(Vector3.new(pos.X, underY, pos.Z))
-            end
-            return nil
-        end
-
-        if camera_controller and type(camera_controller.Update) == "function" then
-            local old_cam_update = camera_controller.Update
-            camera_controller.Update = function(...)
-                local local_fighter = getLocalFighter()
-                if underground_enabled and local_fighter and local_fighter.Entity
-                    and local_fighter.Entity.RootPart and underground_oldpos then
-                    local_fighter.Entity.RootPart.CFrame = underground_oldpos
-                end
-                return old_cam_update(...)
-            end
-        end
-
-        RunService.Heartbeat:Connect(function()
-            if not underground_enabled then
-                underground_oldpos = nil
-                return
-            end
-            if not curweap2() then
-                underground_oldpos = nil
-                return
-            end
-            local local_fighter = getLocalFighter()
-            if local_fighter and local_fighter.Entity and local_fighter.Entity.RootPart then
-                underground_oldpos = local_fighter.Entity.RootPart.CFrame
-                local floorCFrame = getFloorBelowPosition(local_fighter.Entity.RootPart.Position)
-                if floorCFrame then
-                    local_fighter.Entity.RootPart.CFrame = floorCFrame
-                end
-            end
-        end)
-
-        local function getRandomInRange(min, max)
-            return min + math.random() * (max - min)
-        end
-
-        local _aaLastT = tick()
-
-        local function calculateYaw(dt, hrp)
-            if not hrp then return 0 end
-            local yaw = 0
-            local yt = settings.yawtype
-
-            if yt == "jitter" then
-                local amp = math.rad(settings.yawAngle or settings.maxangle or 180)
-                local freq = settings.jitterfreq or 8
-                if math.floor(tick() * freq) % 2 == 0 then
-                    yaw = settings.randomangle and getRandomInRange(-amp, amp) or amp
+            if ym == "backwards" then
+                yaw = yaw + math.rad(yAng) -- 180 = classic backwards
+            elseif ym == "spin" then
+                yaw = math.rad((tick() * (settings.spinSpeed or 720)) % 360)
+            elseif ym == "random" then
+                yaw = math.rad(math.random(0, math.floor(yAng)))
+            elseif ym == "jitter" then
+                -- Elisium-style: flip ±yawAngle
+                local amp = math.rad(yAng)
+                if math.floor(tick() * 8) % 2 == 0 then
+                    yaw = yaw + amp
                 else
-                    yaw = settings.randomangle and getRandomInRange(-amp, amp) or -amp
+                    yaw = yaw - amp
                 end
+            end
 
-            elseif yt == "spinbot" then
-                local spd = getRandomInRange(
-                    (settings.minspeed or 10) / 10,
-                    (settings.maxspeed or 20) / 10
-                )
-                statemanager.smoothyaw = (statemanager.smoothyaw or 0) + spd * (dt or 0.016) * 6
-                yaw = statemanager.smoothyaw
+            if settings.microJitter then
+                local now = tick()
+                yaw   = yaw   + math.rad((math.noise(now * 11) - 0.5) * 4)
+                pitch = pitch + math.rad((math.noise(now * 13) - 0.5) * 3)
+            end
 
-            elseif yt == "random" then
-                if (statemanager.framecounter % 12) == 0 then
-                    statemanager.smoothyaw = getRandomInRange(-math.pi, math.pi)
-                end
-                yaw = statemanager.smoothyaw or 0
+            return Vector2.new(pitch, yaw)
+        end
 
-            elseif yt == "custom" then
-                yaw = math.rad(settings.customyaw or 0)
+        local function stopAntiAimCamera()
+            if _aaCamTask then
+                pcall(task.cancel, _aaCamTask)
+                _aaCamTask = nil
+            end
+        end
 
-            elseif yt == "backward" then
-                yaw = math.pi
+        local function startAntiAimCamera()
+            stopAntiAimCamera()
+            if not camRemote then
+                pcall(function()
+                    camRemote = ReplicatedStorage.Remotes.Replication.Fighter.UpdateCameraRotation
+                end)
+            end
+            if not camRemote then return end
 
-            elseif yt == "at target" or Config.AntiAimAtTarget then
-                local nearest, nd = nil, 1e9
-                for _, p in ipairs(getSafePlayers()) do
-                    if p ~= lp and p.Character then
-                        local th = p.Character:FindFirstChild("HumanoidRootPart")
-                        if th then
-                            local d = (th.Position - hrp.Position).Magnitude
-                            if d < nd then nd, nearest = d, th end
+            _aaCamTask = task.spawn(function()
+                while settings.enabled do
+                    local burst = (settings.yaw == "random" or settings.pitch == "random") and 3 or 1
+                    for _ = 1, burst do
+                        local rot = getAntiAimCameraRotation()
+                        local enc = encodeCameraRotation(rot)
+                        if enc ~= nil then
+                            pcall(function()
+                                camRemote:FireServer(enc, nil)
+                            end)
                         end
                     end
+                    RunService.Heartbeat:Wait()
                 end
-                if nearest then
-                    local to = nearest.Position - hrp.Position
-                    -- face away from target (classic AA)
-                    yaw = math.atan2(-to.X, -to.Z) + math.pi
-                end
+                _aaCamTask = nil
+            end)
+        end
 
-            elseif yt == "freestand" or Config.AntiAimFreestand then
-                -- raycast 8 dirs, face the most open side
-                local bestDist, bestYaw = -1, 0
-                local rp = RaycastParams.new()
-                rp.FilterType = Enum.RaycastFilterType.Exclude
-                rp.FilterDescendantsInstances = { lp.Character }
-                local origin = hrp.Position + Vector3.new(0, 2, 0)
-                for i = 0, 7 do
-                    local a = i * (math.pi / 4)
-                    local dir = Vector3.new(math.sin(a), 0, math.cos(a))
-                    local hit = Workspace:Raycast(origin, dir * 45, rp)
-                    local d = hit and (hit.Position - origin).Magnitude or 45
-                    if d > bestDist then
-                        bestDist = d
-                        bestYaw = a + math.pi -- face open side
+        local function freestandYaw(hrp)
+            local bestYaw, bestDist = 0, -1
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Exclude
+            rp.FilterDescendantsInstances = { lp.Character }
+            local origin = hrp.Position + Vector3.new(0, 2, 0)
+            for i = 0, 7 do
+                local a = i * (math.pi / 4)
+                local dir = Vector3.new(math.sin(a), 0, math.cos(a))
+                local hit = Workspace:Raycast(origin, dir * 45, rp)
+                local d = hit and (hit.Position - origin).Magnitude or 45
+                if d > bestDist then
+                    bestDist = d
+                    bestYaw = a + math.pi
+                end
+            end
+            return bestYaw
+        end
+
+        local function atTargetYaw(hrp)
+            local nearest, nd = nil, 1e9
+            for _, p in ipairs(getSafePlayers()) do
+                if p ~= lp and p.Character then
+                    local th = p.Character:FindFirstChild("HumanoidRootPart")
+                    if th then
+                        local d = (th.Position - hrp.Position).Magnitude
+                        if d < nd then nd, nearest = d, th end
                     end
                 end
-                yaw = bestYaw
             end
-
-            return yaw
+            if not nearest then return nil end
+            local to = nearest.Position - hrp.Position
+            return math.atan2(-to.X, -to.Z) -- face away
         end
 
-        local function calculatePitch()
-            local pitch = 0
-            local pt = settings.pitchtype
-
-            if pt == "down" then
-                pitch = math.rad(settings.pitchAngle or 89)
-            elseif pt == "up" then
-                pitch = -math.rad(settings.pitchAngle or 89)
-            elseif pt == "zero" then
-                pitch = 0
-            elseif pt == "jitter" then
-                local amp = math.rad(math.min(settings.pitchAngle or 60, 89))
-                if math.floor(tick() * (settings.jitterfreq or 8)) % 2 == 0 then
-                    pitch = amp
-                else
-                    pitch = -amp
-                end
-            elseif pt == "spinbot" then
-                pitch = math.sin(tick() * ((settings.maxspeed or 20) / 10))
-                    * math.rad(math.min(settings.pitchAngle or 60, 89))
-            elseif pt == "random" then
-                if (statemanager.framecounter % 12) == 0 then
-                    statemanager.smoothpitch = getRandomInRange(
-                        -math.rad(89), math.rad(89)
-                    )
-                end
-                pitch = statemanager.smoothpitch or 0
-            elseif pt == "custom" then
-                pitch = math.rad(settings.custompitch or 0)
-            end
-
-            return math.clamp(pitch, math.rad(-89), math.rad(89))
+        local function flushAntiAim()
+            stopAntiAimCamera()
+            underground_oldpos = nil
+            pcall(function()
+                if ViewAngle and ViewAngle.restore then ViewAngle.restore() end
+            end)
         end
 
-        local function calculateRoll()
-            if settings.angletype == "tilt 45" then return math.rad(45) end
-            if settings.angletype == "tilt 90" then return math.rad(90) end
-            if settings.angletype == "upside down" then return math.rad(180) end
-            if settings.angletype == "custom" then return math.rad(settings.customangle or 0) end
-            return 0
-        end
-
-        local function updAntiAim()
+        local function updAntiAimBody()
+            if Config.Rage then return end
             if not settings.enabled then return end
+            if settings.applyBody == false then return end
 
             local ch = lp.Character
             local hrp = ch and ch:FindFirstChild("HumanoidRootPart")
             if not hrp then return end
 
-            local now = tick()
-            local dt = math.clamp(now - _aaLastT, 0, 0.05)
-            _aaLastT = now
-            statemanager.framecounter = (statemanager.framecounter or 0) + 1
-
-            local yawOff   = calculateYaw(dt, hrp)
-            local pitchOff = calculatePitch()
-            local rollOff  = calculateRoll()
-
-            -- optional micro-jitter so AA isn't a perfect static pose
-            if settings.microJitter then
-                yawOff   = yawOff   + math.rad((math.noise(now * 11) - 0.5) * 6)
-                pitchOff = math.clamp(
-                    pitchOff + math.rad((math.noise(now * 13 + 2) - 0.5) * 4),
-                    math.rad(-89), math.rad(89)
-                )
-            end
-
-            local _, baseYaw, _ = hrp.CFrame:ToOrientation()
-            -- If freestand/at target already returned absolute world yaw, use it as absolute
-            local absYaw = yawOff
-            if settings.yawtype ~= "freestand"
-                and settings.yawtype ~= "at target"
-                and not Config.AntiAimFreestand
-                and not Config.AntiAimAtTarget then
-                absYaw = baseYaw + yawOff
-            end
-
-            -- client body pose (local desync feel)
-            if settings.applyBody ~= false then
-                local pos = hrp.Position
-                local newCF = CFrame.new(pos)
-                    * CFrame.Angles(0, absYaw, 0)
-                    * CFrame.Angles(0, 0, rollOff)
-                pcall(function()
-                    hrp.CFrame = newCF
-                    hrp.AssemblyAngularVelocity = Vector3.zero
-                end)
-            end
-
-            -- server-visible AA (this is what matters vs other players)
-            pcall(function()
-                if ViewAngle and ViewAngle.forge then
-                    ViewAngle.forge(pitchOff, absYaw)
-                end
-            end)
-        end
-
-        local function flushAntiAim()
-            underground_oldpos = nil
-            statemanager.framecounter = 0
-            statemanager.smoothyaw = 0
-            statemanager.smoothpitch = 0
-            resetHeadBackwardsMotors()
-            pcall(function()
-                if ViewAngle and ViewAngle.restore then ViewAngle.restore() end
-            end)
-            local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                pcall(function() hrp.AssemblyAngularVelocity = Vector3.zero end)
-            end
-        end
-
-        local _aaLastT = tick()
-        local function updAntiAim()
-            if not settings.enabled then return end
-            if settings.yawtype == "none"
-                and settings.pitchtype == "none"
-                and settings.angletype == "none" then
-                return
-            end
-
-            -- DO NOT gate on curweap2() — that was blocking AA
-
-            local character = lp.Character
-            local rootpart = character and character:FindFirstChild("HumanoidRootPart")
-            if not rootpart then return end
-
-            local now = tick()
-            local dt = math.clamp(now - _aaLastT, 0, 0.05)
-            _aaLastT = now
-            statemanager.framecounter += 1
-
-            local yawOff = calculateYaw(dt, rootpart)
-            local pitchOff = calculatePitch()
-            local rollOff = calculateRoll()
-
-            -- base facing from camera (absolute, not stacked on last HRP)
-            local look = Camera.CFrame.LookVector
+            local look = Camera and Camera.CFrame.LookVector or hrp.CFrame.LookVector
             local baseYaw = math.atan2(-look.X, -look.Z)
-            local basePitch = 0 -- keep body pitch mostly level; AA pitch goes to ViewAngle
+            local yaw = baseYaw
+            local ym = settings.yaw or "disabled"
 
-            if Config.AntiAimFreestand or settings.yawtype == "freestand" then
-                local bestYaw, bestDist = baseYaw, -1
-                local rp = RaycastParams.new()
-                rp.FilterType = Enum.RaycastFilterType.Exclude
-                rp.FilterDescendantsInstances = { character }
-                for i = 0, 7 do
-                    local a = i * (math.pi / 4)
-                    local dir = Vector3.new(math.sin(a), 0, math.cos(a))
-                    local hit = Workspace:Raycast(rootpart.Position + Vector3.new(0, 2, 0), dir * 40, rp)
-                    local d = hit and (hit.Position - rootpart.Position).Magnitude or 40
-                    if d > bestDist then
-                        bestDist = d
-                        bestYaw = a + math.pi
-                    end
-                end
-                yawOff = bestYaw - baseYaw
+            if ym == "backwards" then
+                yaw = baseYaw + math.pi
+            elseif ym == "spin" then
+                yaw = math.rad((tick() * (settings.spinSpeed or 720)) % 360)
+            elseif ym == "random" then
+                yaw = math.rad(math.random(0, 359))
+            elseif ym == "freestand" then
+                yaw = freestandYaw(hrp)
+            elseif ym == "at target" then
+                yaw = atTargetYaw(hrp) or (baseYaw + math.pi)
             end
 
-            if Config.AntiAimAtTarget or settings.yawtype == "at target" then
-                local nearest, nd = nil, 1e9
-                for _, p in ipairs(getSafePlayers()) do
-                    if p ~= lp and p.Character then
-                        local h = p.Character:FindFirstChild("HumanoidRootPart")
-                        if h then
-                            local d = (h.Position - rootpart.Position).Magnitude
-                            if d < nd then nd, nearest = d, h end
-                        end
-                    end
-                end
-                if nearest then
-                    local to = nearest.Position - rootpart.Position
-                    yawOff = math.atan2(-to.X, -to.Z) - baseYaw
-                end
+            local pitch = 0
+            local pm = settings.pitch or "disabled"
+            if pm == "up" then
+                pitch = math.rad(-89)
+            elseif pm == "down" then
+                pitch = math.rad(89)
+            elseif pm == "random" then
+                pitch = math.rad(math.random(-89, 89))
             end
-
-            local pos = rootpart.Position
-            local newCF = CFrame.new(pos)
-                * CFrame.Angles(0, baseYaw + yawOff, 0)
-                * CFrame.Angles(basePitch, 0, rollOff)
 
             pcall(function()
-                rootpart.CFrame = newCF
-                rootpart.AssemblyAngularVelocity = Vector3.zero
+                hrp.CFrame = CFrame.new(hrp.Position) * CFrame.Angles(0, yaw, 0)
+                hrp.AssemblyAngularVelocity = Vector3.zero
             end)
 
-            -- network / server-visible anti-aim (this is what others see)
             pcall(function()
                 if ViewAngle and ViewAngle.forge then
-                    -- ViewAngle expects pitch, yaw in radians
-                    ViewAngle.forge(pitchOff, baseYaw + yawOff)
+                    ViewAngle.forge(pitch, yaw)
                 end
             end)
         end
+
+        -- underground (Harion-style: under floor at same XY)
+        local function getFloorBelowPosition(pos)
+            local rp = RaycastParams.new()
+            rp.FilterType = Enum.RaycastFilterType.Exclude
+            if lp.Character then
+                rp.FilterDescendantsInstances = { lp.Character }
+            end
+            local result = Workspace:Raycast(pos, Vector3.new(0, -500, 0), rp)
+            if result then
+                local underY = result.Position.Y - 3
+                return CFrame.new(pos.X, underY, pos.Z)
+            end
+            return nil
+        end
+
+        RunService.Heartbeat:Connect(function()
+            if not settings.enabled then return end
+
+            -- body path
+            pcall(updAntiAimBody)
+
+            -- underground park (server-side feel via local root; keep camera restore separate)
+            if settings.underground then
+                local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not underground_oldpos then
+                        underground_oldpos = getFloorBelowPosition(hrp.Position)
+                    end
+                    if underground_oldpos then
+                        pcall(function()
+                            hrp.CFrame = CFrame.new(
+                                hrp.Position.X,
+                                underground_oldpos.Position.Y,
+                                hrp.Position.Z
+                            )
+                        end)
+                    end
+                end
+            else
+                underground_oldpos = nil
+            end
+        end)
 
         lp.CharacterAdded:Connect(function()
             task.defer(function()
-                flushAntiAim()
-                updateHeadBackwardsMotors()
+                underground_oldpos = nil
+                if settings.enabled then
+                    startAntiAimCamera()
+                end
             end)
         end)
 
-        RunService.Heartbeat:Connect(updAntiAim)
-
-        local antiaimbox = Tabs.Combat:AddLeftGroupbox('anti aim')
+        ----------------------------------------------------------------
+        -- UI (Harion layout)
+        ----------------------------------------------------------------
+        local antiaimbox = Tabs.Combat:AddLeftGroupbox('Anti Aim')
 
         antiaimbox:AddToggle("AntiAimEnable", {
-            Text = "enable",
+            Text = "Enable",
             Default = false,
-            Callback = function(value)
-                settings.enabled = value and true or false
-                if not value then flushAntiAim() end
+            Tooltip = "spoofs camera rotation to the server",
+            Callback = function(v)
+                settings.enabled = v and true or false
+                if v then
+                    startAntiAimCamera()
+                else
+                    flushAntiAim()
+                end
+            end
+        }):AddKeyPicker("AntiAimKey", {
+            Default = "None",
+            Mode = "Toggle",
+            SyncToggleState = true,
+            Text = "Anti Aim",
+            NoUI = false,
+        })
+
+        antiaimbox:AddDropdown("AntiAimPitch", {
+            Values = { "disabled", "up", "down", "zero", "random" },
+            Default = "disabled",
+            Text = "Pitch",
+            Tooltip = "up / down / zero / random (Harion)",
+            Callback = function(v)
+                settings.pitch = v
             end
         })
 
         antiaimbox:AddDropdown("AntiAimYaw", {
-            Values = { "none", "backward", "jitter", "spinbot", "random", "custom", "freestand", "at target" },
-            Default = "none",
-            Text = "yaw",
-            Callback = function(value) settings.yawtype = value end
+            Values = { "disabled", "backwards", "spin", "random", "jitter", "freestand", "at target" },
+            Default = "disabled",
+            Text = "Yaw",
+            Tooltip = "backwards / spin / random — extras: freestand / at target",
+            Callback = function(v)
+                settings.yaw = v
+            end
         })
 
-        antiaimbox:AddDropdown("AntiAimPitch", {
-            Values = { "none", "down", "up", "zero", "jitter", "spinbot", "random", "custom" },
-            Default = "none",
-            Text = "pitch",
-            Callback = function(value) settings.pitchtype = value end
-        })
-
-        antiaimbox:AddDropdown("AntiAimAngle", {
-            Values = { "none", "tilt 45", "tilt 90", "upside down", "custom" },
-            Default = "none",
-            Text = "angle",
-            Callback = function(value) settings.angletype = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimCustomYaw", {
-            Text = "custom yaw",
-            Default = 0,
-            Min = -180,
-            Max = 180,
-            Rounding = 1,
-            Suffix = "°",
-            Callback = function(value) settings.customyaw = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimCustomPitch", {
-            Text = "custom pitch",
-            Default = 0,
-            Min = -180,
-            Max = 180,
-            Rounding = 1,
-            Suffix = "°",
-            Callback = function(value) settings.custompitch = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimJitterFreq", {
-            Text = "jitter frequency",
-            Default = 8,
-            Min = 1,
-            Max = 20,
-            Rounding = 0,
-            Callback = function(value) settings.jitterfreq = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimCustomAngle", {
-            Text = "custom roll",
-            Default = 0,
-            Min = 0,
-            Max = 360,
-            Rounding = 1,
-            Suffix = "°",
-            Callback = function(value) settings.customangle = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimMinSpeed", {
-            Text = "min speed",
-            Default = 10,
-            Min = 1,
-            Max = 50,
-            Rounding = 1,
-            Callback = function(value) settings.minspeed = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimMaxSpeed", {
-            Text = "max speed",
-            Default = 20,
-            Min = 1,
-            Max = 100,
-            Rounding = 1,
-            Callback = function(value) settings.maxspeed = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimMinAngle", {
-            Text = "min angle",
-            Default = 30,
-            Min = 1,
-            Max = 180,
-            Rounding = 1,
-            Suffix = "°",
-            Callback = function(value) settings.minangle = value end
-        })
-
-        antiaimbox:AddSlider("AntiAimMaxAngle", {
-            Text = "max angle",
-            Default = 60,
-            Min = 1,
-            Max = 180,
-            Rounding = 1,
-            Suffix = "°",
-            Callback = function(value) settings.maxangle = value end
-        })
-
-            antiaimbox:AddSlider("AntiAimPitchAngle", {
-            Text = "pitch angle",
+        antiaimbox:AddSlider("AntiAimPitchAngle", {
+            Text = "Pitch angle",
             Default = 89,
-            Min = -180, Max = 180, Rounding = 0, Suffix = "°",
+            Min = 1,
+            Max = 89,          -- real camera pitch range; not 360
+            Rounding = 0,
+            Suffix = "°",
+            Tooltip = "Strength for up/down/random pitch",
             Callback = function(v) settings.pitchAngle = v end
         })
 
+        antiaimbox:AddSlider("AntiAimPitchOffset", {
+            Text = "Pitch offset",
+            Default = 0,
+            Min = -180,
+            Max = 180,
+            Rounding = 0,
+            Suffix = "°",
+            Callback = function(v) settings.pitchOffset = v end
+        })
+
         antiaimbox:AddSlider("AntiAimYawAngle", {
-            Text = "yaw angle (jitter)",
+            Text = "Yaw angle",
             Default = 180,
-            Min = 1, Max = 180, Rounding = 0, Suffix = "°",
+            Min = 1,
+            Max = 360,         -- full circle OK for yaw
+            Rounding = 0,
+            Suffix = "°",
+            Tooltip = "Backwards offset / jitter amplitude / random range",
             Callback = function(v) settings.yawAngle = v end
         })
 
-        antiaimbox:AddToggle("AntiAimMicroJitter", {
-            Text = "micro jitter",
-            Default = true,
-            Tooltip = "Small noise so AA is harder to resolve",
-            Callback = function(v) settings.microJitter = v and true or false end
+        antiaimbox:AddToggle("AntiAimUnderground", {
+            Text = "Underground",
+            Default = false,
+            Tooltip = "Park under the floor at your XY (Harion)",
+            Callback = function(v)
+                settings.underground = v and true or false
+                if not v then underground_oldpos = nil end
+            end
+        }):AddKeyPicker("AntiAimUndergroundKey", {
+            Default = "None",
+            Mode = "Toggle",
+            SyncToggleState = true,
+            Text = "Underground",
+            NoUI = false,
         })
 
         antiaimbox:AddToggle("AntiAimApplyBody", {
-            Text = "apply body cframe",
-            Default = true,
-            Tooltip = "Off = only ViewAngle forge (less local visual chaos)",
-            Callback = function(v) settings.applyBody = v and true or false end
-        })
-
-        antiaimbox:AddToggle("AntiAimRandomAngle", {
-            Text = "random angle",
+            Text = "Apply body CFrame",
             Default = false,
-            Callback = function(value) settings.randomangle = value and true or false end
-        })
-
-        antiaimbox:AddToggle("AntiAimFreestand", {
-            Text = "freestand",
-            Default = Config.AntiAimFreestand == true,
-            Callback = function(v) Config.AntiAimFreestand = v and true or false end
-        })
-        antiaimbox:AddToggle("AntiAimAtTarget", {
-            Text = "at target",
-            Default = Config.AntiAimAtTarget == true,
-            Callback = function(v) Config.AntiAimAtTarget = v and true or false end
-        })
-                antiaimbox:AddToggle("AntiAimUnderground", {
-            Text = "underground",
-            Default = false,
-            Tooltip = "Server sees you under the floor at your XY",
-            Callback = function(value)
-                underground_enabled = value and true or false
-                if not value then underground_oldpos = nil end
+            Tooltip = "Local HRP pose + ViewAngle forge (extra)",
+            Callback = function(v)
+                settings.applyBody = v and true or false
             end
-        }):AddKeyPicker('AntiAimUndergroundKey', {
-    Default = 'None',
-    Mode = 'Toggle',
-    SyncToggleState = true,
-    Text = 'Underground',
-    NoUI = false,
-})
+        })
+
+        antiaimbox:AddToggle("AntiAimMicroJitter", {
+            Text = "Micro jitter",
+            Default = false,
+            Callback = function(v)
+                settings.microJitter = v and true or false
+            end
+        })
+
+        antiaimbox:AddSlider("AntiAimSpinSpeed", {
+            Text = "Spin speed",
+            Default = 720,
+            Min = 90,
+            Max = 1440,
+            Rounding = 0,
+            Suffix = "°/s",
+            Callback = function(v)
+                settings.spinSpeed = v
+            end
+        })
     end
+    ----------------------------------------------------------------
+-- Vertex utility ports (Blink / Phase / ProjTP / Chat / Shoot / Crosshair / Third / Freecam)
+----------------------------------------------------------------
+do
+    -- BLINK
+    local blinkTask, oldPhys, oldSend
+    local function blinkStop()
+        if blinkTask then task.cancel(blinkTask) blinkTask = nil end
+        pcall(function()
+            if setfflag then
+                setfflag("S2PhysicsSenderRate", "15")
+                setfflag("DataSenderRate", "60")
+            end
+        end)
+        oldPhys, oldSend = nil, nil
+    end
+    local function blinkStart()
+        blinkStop()
+        blinkTask = task.spawn(function()
+            while Config.Blink do
+                local phys, send = "0", (Config.BlinkType == "All") and "-1" or "60"
+                if Config.BlinkAutoSend then
+                    local t = tonumber(Config.BlinkSendThreshold) or 0.5
+                    if (tick() % (t + 0.1)) > t then phys, send = "15", "60" end
+                end
+                if phys ~= oldPhys or send ~= oldSend then
+                    pcall(setfflag, "S2PhysicsSenderRate", phys)
+                    pcall(setfflag, "DataSenderRate", send)
+                    oldPhys, oldSend = phys, send
+                end
+                task.wait(0.03)
+            end
+            blinkStop()
+        end)
+    end
+    _G.VertexBlink = { start = blinkStart, stop = blinkStop }
+
+    -- PHASE
+    local modified, phaseConn = {}, nil
+    local rayCheck = RaycastParams.new()
+    rayCheck.RespectCanCollide = true
+    local function phaseClear()
+        for part in pairs(modified) do pcall(function() part.CanCollide = true end) end
+        table.clear(modified)
+        pcall(function() if setfflag then setfflag("AssemblyExtentsExpansionStudHundredth", "30") end end)
+    end
+    local function phaseTick()
+        local char = lp.Character
+        if not char then return end
+        local mode = Config.PhaseMode or "Character"
+        if mode == "Character" then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanCollide then
+                    modified[part] = true
+                    part.CanCollide = false
+                end
+            end
+        elseif mode == "CFrame" or mode == "Motor" then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local head = char:FindFirstChild("Head")
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if not hrp or not head or not hum then return end
+            rayCheck.FilterDescendantsInstances = { char, workspace.CurrentCamera }
+            local size = tonumber(Config.PhaseWallSize) or 5
+            local ray = workspace:Raycast(head.Position, hum.MoveDirection * 1.5, rayCheck)
+            if ray and ray.Instance and ray.Instance.CanCollide then
+                local part = ray.Instance
+                if part.Size.X <= size or part.Size.Z <= size or part.Size.Y <= size then
+                    modified[part] = true
+                    part.CanCollide = false
+                end
+            end
+            for part in pairs(modified) do
+                if not part.Parent or (part.Position - hrp.Position).Magnitude > 12 then
+                    pcall(function() part.CanCollide = true end)
+                    modified[part] = nil
+                end
+            end
+        elseif mode == "FFlag" then
+            pcall(setfflag, "AssemblyExtentsExpansionStudHundredth", "0")
+        end
+    end
+    local function phaseStart()
+        phaseClear()
+        if phaseConn then phaseConn:Disconnect() end
+        phaseConn = RunService.Stepped:Connect(function()
+            if Config.Phase then pcall(phaseTick) end
+        end)
+    end
+    local function phaseStop()
+        if phaseConn then phaseConn:Disconnect() phaseConn = nil end
+        phaseClear()
+    end
+    _G.VertexPhase = { start = phaseStart, stop = phaseStop }
+
+    -- PROJECTILE TP
+    local projConns, attached = {}, setmetatable({}, { __mode = "k" })
+    local TARGET_FOLDERS = { Daggers = true, Bow = true, Slingshot = true }
+    local function closestHead()
+        local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return nil end
+        local best, dist = nil, math.huge
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= lp and plr.Character then
+                local head = plr.Character:FindFirstChild("Head")
+                if head then
+                    local d = (hrp.Position - head.Position).Magnitude
+                    if d < dist then dist, best = d, head end
+                end
+            end
+        end
+        return best
+    end
+    local function attachPart(part)
+        if not part or not part:IsA("BasePart") or attached[part] then return end
+        attached[part] = true
+        part.CanCollide = false
+        part.Massless = true
+        task.spawn(function()
+            while Config.ProjectileTP and part and part.Parent do
+                local head = closestHead()
+                if head and head.Parent then
+                    part.AssemblyAngularVelocity = Vector3.zero
+                    part.CFrame = CFrame.new(head.Position + Vector3.new(0, 0.25, 0))
+                end
+                RunService.Heartbeat:Wait()
+            end
+            attached[part] = nil
+        end)
+    end
+    local function handleInst(inst)
+        if not Config.ProjectileTP or not inst then return end
+        if inst:IsA("BasePart") then attachPart(inst)
+        elseif inst:IsA("Model") or inst:IsA("Folder") then
+            for _, d in ipairs(inst:GetDescendants()) do
+                if d:IsA("BasePart") then attachPart(d) end
+            end
+        end
+    end
+    local function hookFolder(folder)
+        for _, d in ipairs(folder:GetDescendants()) do handleInst(d) end
+        projConns[#projConns + 1] = folder.DescendantAdded:Connect(handleInst)
+    end
+    local function projStart()
+        for _, c in ipairs(projConns) do pcall(function() c:Disconnect() end) end
+        table.clear(projConns)
+        table.clear(attached)
+        for _, child in ipairs(workspace:GetChildren()) do
+            if TARGET_FOLDERS[child.Name] then hookFolder(child) end
+        end
+        projConns[#projConns + 1] = workspace.ChildAdded:Connect(function(child)
+            if TARGET_FOLDERS[child.Name] then hookFolder(child) end
+        end)
+    end
+    local function projStop()
+        for _, c in ipairs(projConns) do pcall(function() c:Disconnect() end) end
+        table.clear(projConns)
+        table.clear(attached)
+    end
+    _G.VertexProjectileTP = { start = projStart, stop = projStop }
+
+    -- CHAT SPAM
+    local spamTask
+    local presets = {
+        smol = { "ez", "L", "gg", "owned", "too easy" },
+        corny = { "get good", "skill issue", "touch grass", "ratio" },
+        wholesome = { "gg", "nice try", "well played", "have a good one" },
+    }
+    local function sendChat(msg)
+        pcall(function()
+            local tcs = game:GetService("TextChatService")
+            local ch = tcs and tcs.TextChannels and (tcs.TextChannels.RBXGeneral or tcs.TextChannels:FindFirstChildWhichIsA("TextChannel"))
+            if ch and ch.SendAsync then ch:SendAsync(msg) return end
+            local rem = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+            if rem and rem:FindFirstChild("SayMessageRequest") then
+                rem.SayMessageRequest:FireServer(msg, "All")
+            end
+        end)
+    end
+    local function spamStart()
+        if spamTask then task.cancel(spamTask) end
+        spamTask = task.spawn(function()
+            local i = 1
+            while Config.ChatSpam do
+                local mode = Config.ChatSpamMode or "custom"
+                local msg = Config.ChatSpamText or "Vertex.lol"
+                if mode ~= "custom" then
+                    local list = presets[mode] or presets.smol
+                    msg = list[((i - 1) % #list) + 1]
+                    i += 1
+                end
+                if msg and msg ~= "" then sendChat(tostring(msg)) end
+                task.wait(math.max(0.4, tonumber(Config.ChatSpamDelay) or 1.5))
+            end
+        end)
+    end
+    local function spamStop()
+        if spamTask then task.cancel(spamTask) spamTask = nil end
+    end
+    _G.VertexChatSpam = { start = spamStart, stop = spamStop }
+
+    -- SHOOT SOUND
+    local function playShootSound()
+        if not Config.ShootSound then return end
+        local id = tostring(Config.ShootSoundId or "4049646104"):match("%d+") or "4049646104"
+        local s = Instance.new("Sound")
+        s.SoundId = "rbxassetid://" .. id
+        s.Volume = tonumber(Config.ShootSoundVolume) or 0.5
+        s.PlaybackSpeed = tonumber(Config.ShootSoundSpeed) or 1
+        s.Parent = workspace.CurrentCamera or workspace
+        s:Play()
+        Debris:AddItem(s, 3)
+    end
+    task.spawn(function()
+        local last = 0
+        while true do
+            task.wait(0.5)
+            if Rivals and Rivals.Gun and type(Rivals.Gun.StartShooting) == "function" and not shared._VertexShootSoundHooked then
+                shared._VertexShootSoundHooked = true
+                local old = Rivals.Gun.StartShooting
+                Rivals.Gun.StartShooting = function(...)
+                    if Config.ShootSound and tick() - last > 0.05 then
+                        last = tick()
+                        pcall(playShootSound)
+                    end
+                    return old(...)
+                end
+            end
+        end
+    end)
+    _G.VertexShootSound = { play = playShootSound }
+
+    -- CROSSHAIR
+    local xgui, ximg
+    local function destroyCrosshair()
+        if xgui then pcall(function() xgui:Destroy() end) end
+        xgui, ximg = nil, nil
+    end
+    local function applyCrosshair()
+        destroyCrosshair()
+        if not Config.CustomCrosshair then return end
+        local parent = (gethui and gethui()) or game:GetService("CoreGui")
+        xgui = Instance.new("ScreenGui")
+        xgui.Name = "VertexCrosshair"
+        xgui.ResetOnSpawn = false
+        xgui.IgnoreGuiInset = true
+        xgui.Parent = parent
+        ximg = Instance.new("ImageLabel")
+        ximg.AnchorPoint = Vector2.new(0.5, 0.5)
+        ximg.Position = UDim2.fromScale(0.5, 0.5)
+        local sz = tonumber(Config.CrosshairSize) or 32
+        ximg.Size = UDim2.fromOffset(sz, sz)
+        ximg.BackgroundTransparency = 1
+        ximg.BorderSizePixel = 0
+        ximg.ZIndex = 100
+        local url = Config.CrosshairImageUrl or ""
+        if url:find("rbxassetid://") or url:match("^%d+$") then
+            ximg.Image = "rbxassetid://" .. (url:match("%d+") or "11963355238")
+        elseif url:find("http") then
+            ximg.Image = url
+        else
+            ximg.Image = "rbxassetid://11963355238"
+        end
+        ximg.Parent = xgui
+        if Config.CrosshairRotate then
+            task.spawn(function()
+                local ang = 0
+                while xgui and xgui.Parent and Config.CustomCrosshair and Config.CrosshairRotate do
+                    ang = (ang + 2) % 360
+                    ximg.Rotation = ang
+                    task.wait(0.03)
+                end
+            end)
+        end
+        if Config.CrosshairDisableGame then
+            pcall(function()
+                local pg = lp:FindFirstChild("PlayerGui")
+                if not pg then return end
+                for _, d in ipairs(pg:GetDescendants()) do
+                    if d:IsA("ImageLabel") or d:IsA("ImageButton") then
+                        local n = d.Name:lower()
+                        if n:find("cross") or n:find("reticle") then d.Visible = false end
+                    end
+                end
+            end)
+        end
+    end
+    _G.VertexCrosshair = { apply = applyCrosshair, destroy = destroyCrosshair }
+
+        -- THIRD PERSON (fixed: no forced LockCenter, throttled apply)
+    local tpConn
+    local function setThird(on)
+        pcall(function()
+            local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+            if on then
+                if hum then hum.CameraOffset = Vector3.new(0, 1.5, 0) end
+                if Rivals and Rivals.Fighter and Rivals.Fighter.LocalFighter then
+                    local item = Rivals.Fighter.LocalFighter.EquippedItem
+                    local cs = item and item.CameraState
+                    if cs and cs._SetPOVState and cs.States then
+                        local st = (Config.ThirdPersonMode == "ThirdPerson Mirrored")
+                            and (cs.States.ThirdPersonMirrored or cs.States.ThirdPerson)
+                            or cs.States.ThirdPerson
+                        if st then pcall(cs._SetPOVState, cs, st) end
+                    end
+                end
+                if Config.ThirdPersonUnlockMouse then
+                    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                    UserInputService.MouseIconEnabled = true
+                end
+            else
+                if hum then hum.CameraOffset = Vector3.zero end
+                -- do NOT force LockCenter — that freezes the mouse
+                UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+                UserInputService.MouseIconEnabled = true
+            end
+        end)
+    end
+    local function thirdStart()
+        if tpConn then tpConn:Disconnect() end
+        setThird(true)
+        local last = 0
+        tpConn = RunService.Heartbeat:Connect(function()
+            if not Config.ThirdPerson then return end
+            local now = tick()
+            if now - last < 0.25 then return end
+            last = now
+            setThird(true)
+        end)
+    end
+    local function thirdStop()
+        if tpConn then tpConn:Disconnect() tpConn = nil end
+        Config.ThirdPerson = false
+        setThird(false)
+    end
+    _G.VertexThirdPerson = { start = thirdStart, stop = thirdStop }
+
+    -- FREECAM
+    local freecamPos
+    local bindName = "VertexFreecam"
+    local function freecamStop()
+        pcall(function() RunService:UnbindFromRenderStep(bindName) end)
+        freecamPos = nil
+        local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+        if hum then pcall(function() hum.PlatformStand = false end) end
+    end
+    local function freecamStart()
+        freecamStop()
+        local cam = workspace.CurrentCamera
+        if not cam then return end
+        freecamPos = cam.CFrame.Position
+        local hum = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+        if hum then pcall(function() hum.PlatformStand = true end) end
+        RunService:BindToRenderStep(bindName, Enum.RenderPriority.Camera.Value + 1, function(dt)
+            if not Config.Freecam or not freecamPos then return end
+            cam = workspace.CurrentCamera
+            if not cam then return end
+            local speed = (tonumber(Config.FreecamSpeed) or 50) * math.clamp(dt, 0, 1/15)
+            local move = Vector3.zero
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then move += cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then move -= cam.CFrame.LookVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then move -= cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then move += cam.CFrame.RightVector end
+            if UserInputService:IsKeyDown(Enum.KeyCode.E) or UserInputService:IsKeyDown(Enum.KeyCode.Space) then move += Vector3.yAxis end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Q) or UserInputService:IsKeyDown(Enum.KeyCode.LeftControl) then move -= Vector3.yAxis end
+            if move.Magnitude > 0 then freecamPos = freecamPos + move.Unit * speed * 60 end
+            local rot = cam.CFrame - cam.CFrame.Position
+            cam.CFrame = CFrame.new(freecamPos) * rot
+            cam.Focus = cam.CFrame * CFrame.new(0, 0, -100)
+        end)
+    end
+    _G.VertexFreecam = { start = freecamStart, stop = freecamStop }
+end
     do
     Config.PlayerWalkSpeed     = tonumber(Config.PlayerWalkSpeed) or 16
     Config.PlayerJumpPower     = tonumber(Config.PlayerJumpPower) or 50
@@ -24163,6 +25946,42 @@ end)
         end
     })
 
+        flightBox:AddToggle('ThirdPerson', {
+        Text = 'Force third person',
+        Default = Config.ThirdPerson == true,
+        Callback = function(v)
+            Config.ThirdPerson = v and true or false
+            if v then _G.VertexThirdPerson.start() else _G.VertexThirdPerson.stop() end
+        end
+    })
+    flightBox:AddDropdown('ThirdPersonMode', {
+        Text = 'Third person mode',
+        Values = { 'ThirdPerson', 'ThirdPerson Mirrored' },
+        Default = Config.ThirdPersonMode or 'ThirdPerson',
+        Callback = function(v) Config.ThirdPersonMode = v end
+    })
+    flightBox:AddToggle('ThirdPersonUnlockMouse', {
+        Text = 'Unlock mouse',
+        Default = Config.ThirdPersonUnlockMouse == true,
+        Callback = function(v) Config.ThirdPersonUnlockMouse = v and true or false end
+    })
+    flightBox:AddToggle('Freecam', {
+        Text = 'Freecam',
+        Default = Config.Freecam == true,
+        Callback = function(v)
+            Config.Freecam = v and true or false
+            if v then _G.VertexFreecam.start() else _G.VertexFreecam.stop() end
+        end
+    }):AddKeyPicker('FreecamKey', {
+        Default = 'None', Mode = 'Toggle', Text = 'Freecam', SyncToggleState = true
+    })
+    flightBox:AddSlider('FreecamSpeed', {
+        Text = 'Freecam speed',
+        Default = tonumber(Config.FreecamSpeed) or 50,
+        Min = 1, Max = 150, Rounding = 0,
+        Callback = function(v) Config.FreecamSpeed = v end
+    })
+
     flightBox:AddLabel('Note: Rivals may reset WalkSpeed/Jump from the server. Client mods still help locally for movement feel.', true)
 end
 
@@ -24236,6 +26055,101 @@ Library.ToggleKeybind = Options.MenuKeybind
     })
     ThemeManager:SetFolder('Vertex')
     SaveManager:SetFolder('Vertex/configs')
+        do
+        local HttpService = game:GetService("HttpService")
+        local COM_FOLDER = "Vertex-ComConf"
+
+        pcall(function()
+            if makefolder then makefolder(COM_FOLDER) end
+        end)
+
+        -- Auto-seed the two community configs (writes only if missing)
+        pcall(function()
+            if not writefile then return end
+            local function ensure(name, content)
+                local path = COM_FOLDER .. "/" .. name
+                if isfile and isfile(path) then return end
+                writefile(path, content)
+            end
+
+            -- IMPORTANT: paste the FULL JSON of each config inside the [==[ ]==] strings.
+            -- Use your [RAGE] Autumn.json and [LEGIT] Ash.json contents exactly.
+            ensure("[RAGE] Autumn.json", [==[
+{"objects":[{"idx":"GVRemember","type":"Toggle","value":true},{"idx":"AimbotFOVFillAnimated","type":"Toggle","value":false},{"idx":"ESP","type":"Toggle","value":true},{"idx":"Weather","type":"Toggle","value":true},{"idx":"RageFOVFilled","type":"Toggle","value":true},{"idx":"AimbotShowLock","type":"Toggle","value":false},{"idx":"PredictiveLead","type":"Toggle","value":true},{"idx":"ShowCustomCursor","type":"Toggle","value":true},{"idx":"GunGrenadeThrow","type":"Toggle","value":false},{"idx":"Freecam","type":"Toggle","value":false},{"idx":"CounterTargetLegits","type":"Toggle","value":true},{"idx":"FakePosHideMeshes","type":"Toggle","value":true},{"idx":"GVEmotes","type":"Toggle","value":false},{"idx":"ESPTracers","type":"Toggle","value":false},{"idx":"ThirdPersonUnlockMouse","type":"Toggle","value":false},{"idx":"AntiAimApplyBody","type":"Toggle","value":false},{"idx":"FXFovCasing","type":"Toggle","value":true},{"idx":"ChatSpam","type":"Toggle","value":false},{"idx":"FeelNoInspectCd","type":"Toggle","value":false},{"idx":"slide_boost","type":"Toggle","value":false},{"idx":"SpooferFavoriteMapEnabled","type":"Toggle","value":false},{"idx":"HUD","type":"Toggle","value":true},{"idx":"RageAntiTranslocate","type":"Toggle","value":false},{"idx":"PlayerInfJump","type":"Toggle","value":false},{"idx":"RageShieldBackstab","type":"Toggle","value":true},{"idx":"PlayerNoclip","type":"Toggle","value":false},{"idx":"AutoLoadoutEnabled","type":"Toggle","value":false},{"idx":"PlayerJumpPowerOn","type":"Toggle","value":false},{"idx":"PlayerWalkSpeedOn","type":"Toggle","value":false},{"idx":"FakePosVisualizer","type":"Toggle","value":true},{"idx":"CustomCrosshair","type":"Toggle","value":false},{"idx":"AimbotCancelSprings","type":"Toggle","value":true},{"idx":"RageShowInfo","type":"Toggle","value":true},{"idx":"WeatherStorm","type":"Toggle","value":false},{"idx":"RageVoidResolver","type":"Toggle","value":true},{"idx":"ThirdPerson","type":"Toggle","value":false},{"idx":"ESPRadar","type":"Toggle","value":false},{"idx":"HUDWatermark","type":"Toggle","value":true},{"idx":"CrosshairDisableGame","type":"Toggle","value":true},{"idx":"FakePosAutoNoclip","type":"Toggle","value":true},{"idx":"AimbotLinkAxes","type":"Toggle","value":true},{"idx":"CrosshairRotate","type":"Toggle","value":false},{"idx":"GunFastShoot","type":"Toggle","value":true},{"idx":"AntiAimMicroJitter","type":"Toggle","value":false},{"idx":"ShootSound","type":"Toggle","value":false},{"idx":"ESPAmmoBar","type":"Toggle","value":false},{"idx":"GVUnlockAll","type":"Toggle","value":true},{"idx":"FXCrosshairDot","type":"Toggle","value":true},{"idx":"Phase","type":"Toggle","value":false},{"idx":"AimbotFOVSpin","type":"Toggle","value":false},{"idx":"BlinkAutoSend","type":"Toggle","value":false},{"idx":"ESPDistanceScaling","type":"Toggle","value":true},{"idx":"FeelAlwaysDmg","type":"Toggle","value":false},{"idx":"SpooferWinPercentEnabled","type":"Toggle","value":false},{"idx":"FakePosEnable","type":"Toggle","value":false},{"idx":"RageVoidChase","type":"Toggle","value":true},{"idx":"RageAntiAA","type":"Toggle","value":true},{"idx":"PlayerFlight","type":"Toggle","value":false},{"idx":"FeelNoWeaponCd","type":"Toggle","value":false},{"idx":"GunFastProjectile","type":"Toggle","value":false},{"idx":"SilentAimManipulate","type":"Toggle","value":true},{"idx":"FeelInstantEquip","type":"Toggle","value":true},{"idx":"VisualsNoFog","type":"Toggle","value":false},{"idx":"SpooferRankedWinsEnabled","type":"Toggle","value":false},{"idx":"AimbotPrediction","type":"Toggle","value":false},{"idx":"SpooferLevelEnabled","type":"Toggle","value":false},{"idx":"FXDamageNumbers","type":"Toggle","value":false},{"idx":"StaffDetectorKick","type":"Toggle","value":false},{"idx":"AntiKatana","type":"Toggle","value":true},{"idx":"RageStaticBehind","type":"Toggle","value":true},{"idx":"ESPHeadDot","type":"Toggle","value":false},{"idx":"ESPLockChevron","type":"Toggle","value":false},{"idx":"FakePosAnimDesync","type":"Toggle","value":true},{"idx":"RageFOVSpin","type":"Toggle","value":true},{"idx":"AntiFlashbang","type":"Toggle","value":false},{"idx":"WeatherShootingStars","type":"Toggle","value":false},{"idx":"ESPName","type":"Toggle","value":true},{"idx":"AntiTrip","type":"Toggle","value":false},{"idx":"AntiDeflect","type":"Toggle","value":true},{"idx":"handcaps","type":"Toggle","value":false},{"idx":"DeathSoundEnable","type":"Toggle","value":false},{"idx":"ESPThreatCount","type":"Toggle","value":false},{"idx":"ESPHealthGhost","type":"Toggle","value":true},{"idx":"KillSoundEnable","type":"Toggle","value":false},{"idx":"RageJitterBreak","type":"Toggle","value":true},{"idx":"ThirdPersonEnabled","type":"Toggle","value":false},{"idx":"TriggerFOVFillAnimated","type":"Toggle","value":false},{"idx":"ESPWeapon","type":"Toggle","value":false},{"idx":"FakePosPanic","type":"Toggle","value":false},{"idx":"HitLogsShowLethal","type":"Toggle","value":true},{"idx":"HitLogsShowHP","type":"Toggle","value":true},{"idx":"RageForceBody","type":"Toggle","value":true},{"idx":"HitLogsEnable","type":"Toggle","value":true},{"idx":"AnimAutoRespawn","type":"Toggle","value":true},{"idx":"SilentAimTorsoFallback","type":"Toggle","value":false},{"idx":"ESPFlagShield","type":"Toggle","value":true},{"idx":"FeelCustomAdsFov","type":"Toggle","value":false},{"idx":"DmgNumEnable","type":"Toggle","value":true},{"idx":"HitSoundEnable","type":"Toggle","value":true},{"idx":"ESPNameHealthUnderline","type":"Toggle","value":false},{"idx":"AnimLoop","type":"Toggle","value":true},{"idx":"FXHitMarker","type":"Toggle","value":true},{"idx":"AnimEnabled","type":"Toggle","value":true},{"idx":"GameVisuals","type":"Toggle","value":true},{"idx":"MiscTracerEnable","type":"Toggle","value":true},{"idx":"WeatherMeteors","type":"Toggle","value":false},{"idx":"FXCrosshair","type":"Toggle","value":true},{"idx":"QueueRanked","type":"Toggle","value":false},{"idx":"FXKillBanner","type":"Toggle","value":false},{"idx":"Aimbot","type":"Toggle","value":false},{"idx":"KeybindMenuOpen","type":"Toggle","value":false},{"idx":"ShowAimbotFOV","type":"Toggle","value":false},{"idx":"GunGrenadeImpact","type":"Toggle","value":false},{"idx":"CounterHud","type":"Toggle","value":true},{"idx":"ESPPeekAlert","type":"Toggle","value":false},{"idx":"VMOffsetEnabled","type":"Toggle","value":true},{"idx":"SilentManipIndicator","type":"Toggle","value":false},{"idx":"GunAlwaysBackstab","type":"Toggle","value":true},{"idx":"GunFullAuto","type":"Toggle","value":false},{"idx":"RagePreferMeleeOnDeflect","type":"Toggle","value":true},{"idx":"WeatherGodRays","type":"Toggle","value":true},{"idx":"WeatherMood","type":"Toggle","value":false},{"idx":"ESPArrowDistFade","type":"Toggle","value":true},{"idx":"ESPDistance","type":"Toggle","value":true},{"idx":"RageAttackTranslocate","type":"Toggle","value":false},{"idx":"GunNoSpread","type":"Toggle","value":true},{"idx":"CounterEnabled","type":"Toggle","value":false},{"idx":"FXBeamTracer","type":"Toggle","value":false},{"idx":"FakePosWalkMode","type":"Toggle","value":true},{"idx":"GunNoRecoil","type":"Toggle","value":true},{"idx":"DeviceSpoofLoop","type":"Toggle","value":false},{"idx":"RageStrobeUseVoid","type":"Toggle","value":false},{"idx":"ESPFlagStaring","type":"Toggle","value":false},{"idx":"DeviceSpoofEnable","type":"Toggle","value":true},{"idx":"Rage","type":"Toggle","value":true},{"idx":"CameraAspectRatioEnabled","type":"Toggle","value":false},{"idx":"AutoCollectDrops","type":"Toggle","value":true},{"idx":"QueueEnabled","type":"Toggle","value":false},{"idx":"RagePrediction","type":"Toggle","value":false},{"idx":"SpooferRankedEloEnabled","type":"Toggle","value":false},{"idx":"AutoBanQueueEnable","type":"Toggle","value":false},{"idx":"TargetHUD","type":"Toggle","value":true},{"idx":"GunGrenadeNoFuse","type":"Toggle","value":false},{"idx":"Blink","type":"Toggle","value":false},{"idx":"FXFovRotate","type":"Toggle","value":true},{"idx":"RageStrobeUseJitter","type":"Toggle","value":true},{"idx":"AimbotSkipImmune","type":"Toggle","value":true},{"idx":"ESPBox","type":"Toggle","value":true},{"idx":"FXCrosshairOutline","type":"Toggle","value":true},{"idx":"RageProjectileForceHit","type":"Toggle","value":true},{"idx":"ProjectileTP","type":"Toggle","value":true},{"idx":"VisualsHolograms","type":"Toggle","value":false},{"idx":"ESPBoxFill","type":"Toggle","value":false},{"idx":"FXCrosshairSniper","type":"Toggle","value":true},{"idx":"ProjectileLead","type":"Toggle","value":false},{"idx":"RagePulsePreferBehind","type":"Toggle","value":false},{"idx":"SilentFOVFillAnimated","type":"Toggle","value":true},{"idx":"RageAutoRetarget","type":"Toggle","value":true},{"idx":"FXCrosshairSpin","type":"Toggle","value":true},{"idx":"VisualsPerformanceMode","type":"Toggle","value":false},{"idx":"CameraSpin","type":"Toggle","value":false},{"idx":"RageCombatOrbitJitter","type":"Toggle","value":true},{"idx":"SilentFOVFilled","type":"Toggle","value":true},{"idx":"AntiAimEnable","type":"Toggle","value":true},{"idx":"SpooferWinStreakEnabled","type":"Toggle","value":true},{"idx":"SpooferCasualWinsEnabled","type":"Toggle","value":false},{"idx":"FeelNoSway","type":"Toggle","value":true},{"idx":"SpooferNameEnabled","type":"Toggle","value":true},{"idx":"CollectAmmo","type":"Toggle","value":true},{"idx":"ESPArrowDistLabel","type":"Toggle","value":false},{"idx":"GVRankCharmOn","type":"Toggle","value":false},{"idx":"GVUnlockWeapons","type":"Toggle","value":false},{"idx":"CameraFovOverride","type":"Toggle","value":false},{"idx":"VisualsHologramLethal","type":"Toggle","value":true},{"idx":"FXCrosshairBounce","type":"Toggle","value":true},{"idx":"ESPHealTick","type":"Toggle","value":false},{"idx":"VMDisableTextures","type":"Toggle","value":false},{"idx":"ESPChams","type":"Toggle","value":false},{"idx":"RageExposureSnipe","type":"Toggle","value":true},{"idx":"FFAAutoRespawn","type":"Toggle","value":false},{"idx":"RageProjectileBreaker","type":"Toggle","value":false},{"idx":"AimbotDebug","type":"Toggle","value":false},{"idx":"WeatherPuddles","type":"Toggle","value":false},{"idx":"ESPFadeIn","type":"Toggle","value":true},{"idx":"ESPSkeleton","type":"Toggle","value":false},{"idx":"WeatherRainbow","type":"Toggle","value":false},{"idx":"RageSkipImmune","type":"Toggle","value":true},{"idx":"SilentAimVisCheck","type":"Toggle","value":false},{"idx":"ESPChamsVisSplit","type":"Toggle","value":true},{"idx":"WeatherStormFlash","type":"Toggle","value":true},{"idx":"Visuals","type":"Toggle","value":true},{"idx":"TriggerFOVFilled","type":"Toggle","value":false},{"idx":"SilentAimMultipoint","type":"Toggle","value":false},{"idx":"AimbotVisCheck","type":"Toggle","value":true},{"idx":"CounterTargetBots","type":"Toggle","value":true},{"idx":"HUDWatermarkStats","type":"Toggle","value":false},{"idx":"RageKnifeBackstab","type":"Toggle","value":true},{"idx":"DmgNumGradient","type":"Toggle","value":true},{"idx":"VisualsFullbright","type":"Toggle","value":false},{"idx":"VisualsBloom","type":"Toggle","value":false},{"idx":"RagePrioritizeHackers","type":"Toggle","value":true},{"idx":"TriggerScopeCheck","type":"Toggle","value":false},{"idx":"SilentAim","type":"Toggle","value":false},{"idx":"FakePosSurfaceCam","type":"Toggle","value":true},{"idx":"ESPHealth","type":"Toggle","value":true},{"idx":"RageBacktrack","type":"Toggle","value":true},{"idx":"AimbotFOVFilled","type":"Toggle","value":false},{"idx":"SilentAimJitter","type":"Toggle","value":true},{"idx":"RageVoidSpam","type":"Toggle","value":false},{"idx":"TriggerFOVSpin","type":"Toggle","value":false},{"idx":"TeamCheck","type":"Toggle","value":true},{"idx":"AimbotDirectCamera","type":"Toggle","value":false},{"idx":"RageGatePoison","type":"Toggle","value":true},{"idx":"AntiAimUnderground","type":"Toggle","value":false},{"idx":"RageStrobeMultiSlot","type":"Toggle","value":true},{"idx":"SkyboxHideCelestial","type":"Toggle","value":false},{"idx":"GVWrapInverted","type":"Toggle","value":false},{"idx":"AimbotCurvedFlick","type":"Toggle","value":false},{"idx":"ESPDeclutter","type":"Toggle","value":true},{"idx":"ESPArrows","type":"Toggle","value":false},{"idx":"RageShowFOV","type":"Toggle","value":true},{"idx":"VMChamsEnabled","type":"Toggle","value":false},{"idx":"ESPFlagLowHP","type":"Toggle","value":true},{"idx":"ESPFlagInvincible","type":"Toggle","value":true},{"idx":"ESPLookLine","type":"Toggle","value":false},{"idx":"RagePulseHideAfterShots","type":"Toggle","value":false},{"idx":"ShowFOV","type":"Toggle","value":true},{"idx":"CollectHealth","type":"Toggle","value":true},{"idx":"DmgNumOutline","type":"Toggle","value":true},{"idx":"ESPFlagDeflect","type":"Toggle","value":true},{"idx":"RageStrobeVoidOnMiss","type":"Toggle","value":false},{"idx":"FakePosZeroVel","type":"Toggle","value":true},{"idx":"SilentFOVSpin","type":"Toggle","value":false},{"idx":"AimbotShotOverride","type":"Toggle","value":false},{"idx":"Trigger","type":"Toggle","value":false},{"idx":"VisualsRainbowMap","type":"Toggle","value":false},{"idx":"RageAntiKnife","type":"Toggle","value":false},{"idx":"WeatherClockDial","type":"Toggle","value":true},{"idx":"ShowTriggerFOV","type":"Toggle","value":false},{"idx":"ESPHealthSmooth","type":"Toggle","value":true},{"idx":"RagePredictPrefire","type":"Toggle","value":true},{"idx":"ESPTeamCheck","type":"Toggle","value":true},{"idx":"AvoidDeflect","type":"Toggle","value":true},{"idx":"TriggerHeadOnly","type":"Toggle","value":false},{"idx":"RageResolver","type":"Toggle","value":true},{"idx":"moddetector","type":"Toggle","value":true},{"idx":"ESPHealthGradB","type":"ColorPicker","transparency":0,"value":"3de07a"},{"idx":"ESPTracerOrigin","type":"Dropdown","value":"Bottom"},{"idx":"RageOnEmpty","type":"Dropdown","value":"Reload"},{"idx":"ESPNameColorMode","type":"Dropdown","value":"Solid"},{"idx":"KillSoundPreset","type":"Dropdown","value":"Fatality"},{"idx":"CounterLegitDelay","type":"Slider","value":"3"},{"idx":"VisualsBloomIntensity","type":"Slider","value":"1"},{"idx":"ESPDistanceScalingRef","type":"Slider","value":"50"},{"idx":"RageStrobeUp","type":"Slider","value":"0.4"},{"idx":"AutoBanSearch2","type":"Input","text":""},{"idx":"RageRestoreMode","type":"Dropdown","value":"auto"},{"idx":"BlinkSendThreshold","type":"Slider","value":"0.5"},{"idx":"ESPInfoColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"AimbotSmoothnessY","type":"Slider","value":"0"},{"idx":"AntiAimPitch","type":"Dropdown","value":"up"},{"idx":"CounterMode","type":"Dropdown","value":"Kicia"},{"idx":"RagePulseAttackInside","type":"Slider","value":"0.1"},{"idx":"SpooferCasualWins","type":"Input","text":"500"},{"idx":"CombatSoundPitch","type":"Slider","value":"100"},{"idx":"GunEquipSpeed","type":"Slider","value":"1"},{"idx":"RageGumMode","type":"Dropdown","value":"on"},{"idx":"RageCombatOrbitRadius","type":"Slider","value":"60"},{"idx":"PlayerJumpPower","type":"Slider","value":"50"},{"idx":"HUDToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"AntiAimSpinSpeed","type":"Slider","value":"974"},{"idx":"WeatherStarRate","type":"Slider","value":"1"},{"idx":"RageStrobeShots","type":"Slider","value":"14"},{"idx":"ESPTextScale","type":"Slider","value":"1"},{"idx":"WeatherType","type":"Dropdown","value":"Autumn"},{"idx":"AimbotFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"ESPGradientRotText","type":"Slider","value":"90"},{"idx":"SilentAimBodyMix","type":"Slider","value":"25"},{"idx":"AimbotSmoothnessX","type":"Slider","value":"0"},{"idx":"RageAttackMode","type":"Dropdown","value":"Auto"},{"idx":"ESPMaxPlayers","type":"Slider","value":"0"},{"idx":"AimbotFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"FOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPSkeletonGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePBDepthUpMin","type":"Slider","value":"1"},{"idx":"ESPGradientRotBox","type":"Slider","value":"0"},{"idx":"RageStrobeSlots","type":"Slider","value":"6"},{"idx":"AimbotFOVFillRotation","type":"Slider","value":"0"},{"idx":"AimbotTrackAssist","type":"Slider","value":"100"},{"idx":"RageOrbitDwell","type":"Slider","value":"0.3"},{"idx":"CounterZigAmp","type":"Slider","value":"400"},{"idx":"FXBeamStyle","type":"Dropdown","value":"Glow"},{"idx":"TriggerFOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"DmgNumKillColor","type":"ColorPicker","transparency":0,"value":"ff4646"},{"idx":"AimbotStickiness","type":"Slider","value":"0.15"},{"idx":"AutoLoadoutMelee","type":"Dropdown","value":"Fists"},{"idx":"AimbotFOVFillColor2","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"slide_speed","type":"Slider","value":"135"},{"idx":"SilentFOVOutlineRotation","type":"Slider","value":"0"},{"idx":"ESPInfoTextSize","type":"Slider","value":"12"},{"idx":"FakePosVizColor","type":"ColorPicker","transparency":0,"value":"00a2ff"},{"idx":"ProjectileSpeed","type":"Slider","value":"300"},{"idx":"ServerProcessingMs","type":"Slider","value":"30"},{"idx":"RagePulseAttackBehind","type":"Slider","value":"1.4"},{"idx":"ESPFont","type":"Dropdown","value":"Code"},{"idx":"CameraSpinSpeed","type":"Slider","value":"1"},{"idx":"RageTranslocateOffset","type":"Slider","value":"-5"},{"idx":"SpooferWinPercent","type":"Input","text":"75"},{"idx":"AimbotToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"FXFovColorA","type":"ColorPicker","transparency":0,"value":"35d7c7"},{"idx":"SilentAimStickiness","type":"Slider","value":"0.05"},{"idx":"ESPSkeletonColorMode","type":"Dropdown","value":"Solid"},{"idx":"CounterCycleMs","type":"Slider","value":"50"},{"idx":"DeviceSpoofInterval","type":"Slider","value":"2"},{"idx":"FFAAutoRespawnDelay","type":"Slider","value":"0.35"},{"idx":"ShootSoundVolume","type":"Slider","value":"0.5"},{"idx":"ESPCasingThickness","type":"Slider","value":"1"},{"idx":"MaxDistance","type":"Slider","value":"1200"},{"idx":"RageKillPause","type":"Slider","value":"0"},{"idx":"CounterFlyMs","type":"Slider","value":"25"},{"idx":"ESPChamsStyle","type":"Dropdown","value":"Shade"},{"idx":"AimbotCurvedIntensity","type":"Slider","value":"0.35"},{"idx":"MiscTracerDuration","type":"Slider","value":"3"},{"idx":"AnimPrimaryId","type":"Input","text":"110064349530772"},{"idx":"VMChamsTransparency","type":"Slider","value":"0.5"},{"idx":"CounterFlySpeed","type":"Slider","value":"15000"},{"idx":"BlinkKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"ESPSkeletonThickness","type":"Slider","value":"1"},{"idx":"DmgNumGradTop","type":"ColorPicker","transparency":0,"value":"ff0000"},{"idx":"SilentFOVFillColor2","type":"ColorPicker","transparency":0,"value":"e2ff8f"},{"idx":"RageFOVFill2","type":"ColorPicker","transparency":0,"value":"fa00ff"},{"idx":"GunFireRate","type":"Slider","value":"100"},{"idx":"AimbotFOVOutlineThickness","type":"Slider","value":"1.5"},{"idx":"RageStrobeJitter","type":"Slider","value":"0.62"},{"idx":"TriggerFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"AntiAimPitchAngle","type":"Slider","value":"89"},{"idx":"TriggerFOVPosition","type":"Dropdown","value":"Target"},{"idx":"CameraFovAmount","type":"Slider","value":"90"},{"idx":"RageVoidSpamRate","type":"Slider","value":"0.05"},{"idx":"CounterDepth","type":"Slider","value":"6"},{"idx":"TriggerFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePulseHideSeconds","type":"Slider","value":"0.15"},{"idx":"RageResolverMode","type":"Dropdown","value":"Auto"},{"idx":"AimbotFOVFillSpeed","type":"Slider","value":"1"},{"idx":"VisualsGradeStrength","type":"Slider","value":"0.6"},{"idx":"SilentAimJitterDeg","type":"Slider","value":"1.5"},{"idx":"ESPNameGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ESPHeadDotSize","type":"Slider","value":"4"},{"idx":"RageInfoFont","type":"Dropdown","value":"Arcade"},{"idx":"WeatherIntensity","type":"Slider","value":"2"},{"idx":"SilentFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"HitLogsPhraseMode","type":"Dropdown","value":"Random"},{"idx":"CounterVoidSpeed","type":"Slider","value":"3000"},{"idx":"FakePosKeyPick","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"VMChamsColor","type":"ColorPicker","transparency":0,"value":"35d7c7"},{"idx":"AnimPreset","type":"Dropdown","value":"OJ"},{"idx":"SpooferName","type":"Input","text":"Vertex.lol Too OP"},{"idx":"CounterBoost","type":"Slider","value":"100000"},{"idx":"CombatSoundVol","type":"Slider","value":"200"},{"idx":"NotifySide","type":"Dropdown","value":"Left"},{"idx":"ESPBoxScale","type":"Slider","value":"1"},{"idx":"RagePreferredSlot","type":"Dropdown","value":"Primary"},{"idx":"RageFOVPosition","type":"Dropdown","value":"Target"},{"idx":"RageMeleeReach","type":"Slider","value":"18"},{"idx":"VMOffsetPitch","type":"Slider","value":"0"},{"idx":"ESPTracerColorMode","type":"Dropdown","value":"Solid"},{"idx":"BlinkType","type":"Dropdown","value":"Movement Only"},{"idx":"RagePulseAttackSeconds","type":"Slider","value":"0.04"},{"idx":"MiscTracerStyle","type":"Dropdown","value":"Beam"},{"idx":"AimbotPriority","type":"Dropdown","value":"Crosshair"},{"idx":"FXCrosshairThickness","type":"Slider","value":"2"},{"idx":"SilentAimHitChance","type":"Slider","value":"100"},{"idx":"RagePredictionMulti","type":"Slider","value":"1.2"},{"idx":"VMOffsetZ","type":"Slider","value":"-0.39"},{"idx":"ESPHealthColor","type":"ColorPicker","transparency":0,"value":"3de07a"},{"idx":"ESPHealthColorMode","type":"Dropdown","value":"Ramp"},{"idx":"AimbotOvershoot","type":"Slider","value":"0"},{"idx":"SilentFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"AimbotForgetTime","type":"Slider","value":"0.2"},{"idx":"ESPFlagGradA","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"HitLogsMaxWidth","type":"Slider","value":"420"},{"idx":"SilentManipIndicatorSize","type":"Slider","value":"16"},{"idx":"SilentAimFOV","type":"Slider","value":"190"},{"idx":"RageFOVFill1","type":"ColorPicker","transparency":0,"value":"c59dff"},{"idx":"SpooferWinStreak","type":"Input","text":"283717"},{"idx":"SilentManipIndicatorFont","type":"Dropdown","value":"GothamBold"},{"idx":"VisualsHologramDuration","type":"Slider","value":"3.5"},{"idx":"RageStrobeAttackSec","type":"Slider","value":"0.16"},{"idx":"ESPNameGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"PhaseWallSize","type":"Slider","value":"9"},{"idx":"ESPSkeletonColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SpooferDisplayName","type":"Input","text":"get Vertex.lol"},{"idx":"VisualsHologramColor","type":"ColorPicker","transparency":0,"value":"00dcff"},{"idx":"CameraAspectRatioX","type":"Slider","value":"4"},{"idx":"SilentAimMultipointCount","type":"Slider","value":"5"},{"idx":"CounterZigFreq","type":"Slider","value":"8"},{"idx":"AimbotJumpDamping","type":"Slider","value":"40"},{"idx":"RageStrobeHideSec","type":"Slider","value":"0.16"},{"idx":"VMOffsetY","type":"Slider","value":"0.52"},{"idx":"RageCombatOrbitHeight","type":"Slider","value":"8"},{"idx":"DmgNumColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPMarkGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"DeviceSpoofType","type":"Dropdown","value":"VR"},{"idx":"RageStrobeDown","type":"Slider","value":"1.1"},{"idx":"LeadCap","type":"Slider","value":"15"},{"idx":"AntiAimUndergroundKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"VMOffsetYaw","type":"Slider","value":"0"},{"idx":"AimbotMaxSpeed","type":"Slider","value":"0"},{"idx":"VisualsToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"SilentFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ff1717"},{"idx":"TriggerFOVFillSpeed","type":"Slider","value":"1"},{"idx":"WeatherMeteorRate","type":"Slider","value":"1"},{"idx":"ColorVisible","type":"ColorPicker","transparency":0,"value":"29e0ff"},{"idx":"ESPFlagGradB","type":"ColorPicker","transparency":0,"value":"ff4655"},{"idx":"FreecamKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"RageFOVOutline2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"FeelAdsFovOffset","type":"Slider","value":"0"},{"idx":"FXCrosshairStyle","type":"Dropdown","value":"Cross"},{"idx":"QueueMode","type":"Dropdown","multi":false,"value":"1v1"},{"idx":"MiscTracerEdge","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"SilentManipIndicatorPos","type":"Dropdown","value":"Below Crosshair"},{"idx":"PlayerFlightSpeed","type":"Slider","value":"200"},{"idx":"SpooferRankedWins","type":"Input","text":"250"},{"idx":"ESPBoxColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SilentAimTargetPart","type":"Dropdown","value":"Head"},{"idx":"PlayerWalkSpeed","type":"Slider","value":"16"},{"idx":"SilentAimManipulateRange","type":"Slider","value":"48"},{"idx":"ESPTracerColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPMarkGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"HitLogsType","type":"Dropdown","value":"Custom GUI"},{"idx":"SilentAimKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"TriggerFOVOutlineRotation","type":"Slider","value":"0"},{"idx":"AntiAimKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"CrosshairSize","type":"Slider","value":"32"},{"idx":"CrosshairImageUrl","type":"Input","text":""},{"idx":"AimbotTargetPart","type":"Dropdown","value":"Best"},{"idx":"SilentFOVSpinSpd","type":"Slider","value":"2.2"},{"idx":"RagePBDepthUpMax","type":"Slider","value":"4"},{"idx":"TriggerToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"TriggerMaxDist","type":"Slider","value":"400"},{"idx":"ESPTracerThickness","type":"Slider","value":"1"},{"idx":"ESPTextSize","type":"Slider","value":"14"},{"idx":"VMOffsetX","type":"Slider","value":"1.25"},{"idx":"RageStaticJitter","type":"Slider","value":"0.35"},{"idx":"SilentManipIndicatorColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"AimbotFOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPBoxStyle","type":"Dropdown","value":"Corner Brackets"},{"idx":"ESPFlagColor","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ESPMarkColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePBDepthForwardMin","type":"Slider","value":"4"},{"idx":"RageVoidDepth","type":"Dropdown","value":"deep"},{"idx":"SilentFOVFillRotation","type":"Slider","value":"0"},{"idx":"ShootSoundId","type":"Input","text":"4049646104"},{"idx":"AimbotNoiseDeg","type":"Slider","value":"0"},{"idx":"ChatSpamDelay","type":"Slider","value":"1.5"},{"idx":"ChatSpamText","type":"Input","text":"Vertex.lol"},{"idx":"ESPInfoColorMode","type":"Dropdown","value":"Solid"},{"idx":"ESPTracerGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RageStrobeSide","type":"Slider","value":"0.7"},{"idx":"ChatSpamMode","type":"Dropdown","value":"custom"},{"idx":"RagePBDepthForwardMax","type":"Slider","value":"9"},{"idx":"ESPBoxGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"AutoBanWeapon2","type":"Dropdown","multi":false,"value":"Katana"},{"idx":"PhaseMode","type":"Dropdown","value":"Character"},{"idx":"RageStaticBehindY","type":"Slider","value":"0"},{"idx":"PhaseKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"HitSoundPreset","type":"Dropdown","value":"Rust"},{"idx":"AntiAimYaw","type":"Dropdown","value":"jitter"},{"idx":"HitLogsLethalPhrase","type":"Dropdown","value":"eliminated"},{"idx":"RageMode","type":"Dropdown","value":"Pulse"},{"idx":"HitLogsPhrase","type":"Dropdown","value":"hit"},{"idx":"RageVoidSpamAmount","type":"Slider","value":"3"},{"idx":"HitLogsMax","type":"Slider","value":"6"},{"idx":"ViewmodelScale","type":"Slider","value":"1.11"},{"idx":"FXCrosshairAngle","type":"Slider","value":"85"},{"idx":"HitLogsDuration","type":"Slider","value":"2.5"},{"idx":"VMOffsetRoll","type":"Slider","value":"0"},{"idx":"RageTargetPriority","type":"Dropdown","value":"Auto"},{"idx":"FakePosDepth","type":"Slider","value":"5.8"},{"idx":"DmgNumGradBot","type":"ColorPicker","transparency":0,"value":"ff8515"},{"idx":"DmgNumRiseSpread","type":"Slider","value":"150"},{"idx":"DmgNumRise","type":"Slider","value":"120"},{"idx":"DmgNumDuration","type":"Slider","value":"1.17"},{"idx":"RageInfoSize","type":"Slider","value":"14"},{"idx":"DmgNumSize","type":"Slider","value":"30"},{"idx":"DmgNumFont","type":"Dropdown","value":"GothamBold"},{"idx":"AnimKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"FXCrosshairColor","type":"ColorPicker","transparency":0,"value":"64a7ff"},{"idx":"MiscTracerFade","type":"Slider","value":"0.5"},{"idx":"RagePulseAttackJitter","type":"Slider","value":"2"},{"idx":"SilentFOVFillSpeed","type":"Slider","value":"1"},{"idx":"AimbotFOVDegVis","type":"Slider","value":"20"},{"idx":"MiscTracerOutlineSize","type":"Slider","value":"2.25"},{"idx":"MiscTracerMainSize","type":"Slider","value":"1"},{"idx":"AimbotSwitchDeg","type":"Slider","value":"2"},{"idx":"MiscTracerMain","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ThirdPersonMode","type":"Dropdown","value":"ThirdPerson"},{"idx":"TriggerFOVSpinSpd","type":"Slider","value":"1"},{"idx":"AutoBanWeapon1","type":"Dropdown","multi":false,"value":"Riot Shield"},{"idx":"TriggerFOVOutlineThickness","type":"Slider","value":"1.5"},{"idx":"AutoBanSearch1","type":"Input","text":""},{"idx":"AutoLoadoutUtility","type":"Dropdown","value":"Grenade"},{"idx":"AutoLoadoutSecondary","type":"Dropdown","value":"Handgun"},{"idx":"ESPBoxThickness","type":"Slider","value":"1"},{"idx":"AutoLoadoutPrimary","type":"Dropdown","value":"Shotgun"},{"idx":"RageToggleKey","type":"KeyPicker","key":"Q","mode":"Toggle","modifiers":[]},{"idx":"ESPChamsFillTransparency","type":"Slider","value":"0.6"},{"idx":"TriggerRefireMs","type":"Slider","value":"0"},{"idx":"RageBacktrackMs","type":"Slider","value":"209"},{"idx":"ESPFlagColorMode","type":"Dropdown","value":"PerFlag"},{"idx":"RageFOV","type":"Slider","value":"96"},{"idx":"TriggerFOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"TriggerDelayMs","type":"Slider","value":"0"},{"idx":"AimbotFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"FXCrosshairGap","type":"Slider","value":"13"},{"idx":"ESPInfoGradB","type":"ColorPicker","transparency":0,"value":"ff9e4b"},{"idx":"ESPGradientSpeed","type":"Slider","value":"0"},{"idx":"SpooferFavoriteMap","type":"Input","text":"Arena"},{"idx":"VisualsHologramRange","type":"Slider","value":"300"},{"idx":"AntiAimYawAngle","type":"Slider","value":"237"},{"idx":"CounterEnabledKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"SilentAimFOVPosition","type":"Dropdown","value":"Target"},{"idx":"SpooferRankedElo","type":"Input","text":"2400"},{"idx":"SpooferLevel","type":"Input","text":"1212"},{"idx":"VisualsHologramVisibility","type":"Slider","value":"1.4"},{"idx":"SilentFOVOutlineThickness","type":"Slider","value":"0.5"},{"idx":"ESPTextCasing","type":"Slider","value":"1"},{"idx":"ShootSoundSpeed","type":"Slider","value":"1"},{"idx":"AntiAimPitchOffset","type":"Slider","value":"180"},{"idx":"ESPSkeletonGradB","type":"ColorPicker","transparency":0,"value":"78b4ff"},{"idx":"TriggerFOVFillRotation","type":"Slider","value":"0"},{"idx":"ESPMarkColorMode","type":"Dropdown","value":"Solid"},{"idx":"ESPNameMode","type":"Dropdown","value":"Display"},{"idx":"VisualsGrade","type":"Dropdown","value":"Cold"},{"idx":"AimbotSmoothness","type":"Slider","value":"0"},{"idx":"RagePulseAttackY","type":"Slider","value":"-5"},{"idx":"AimbotFOVSpinSpd","type":"Slider","value":"1"},{"idx":"CounterRadius","type":"Slider","value":"30"},{"idx":"GVRankCharmLb","type":"Input","text":"0"},{"idx":"AnimSpeed","type":"Slider","value":"2"},{"idx":"ESPNameColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RageStaticBehindDist","type":"Slider","value":"3"},{"idx":"RagePBSideJitter","type":"Slider","value":"1.5"},{"idx":"FXCrosshairLen","type":"Slider","value":"24"},{"idx":"VMChamsMaterial","type":"Dropdown","value":"ForceField"},{"idx":"PlayerFlightKey","type":"KeyPicker","key":"X","mode":"Toggle","modifiers":[]},{"idx":"ESPBoxGradA","type":"ColorPicker","transparency":0,"value":"ff3b4e"},{"idx":"RageStrobeBehind","type":"Slider","value":"0.6"},{"idx":"VisualsHologramStyle","type":"Dropdown","value":"Orb"},{"idx":"ESPInfoGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"CameraAspectRatioY","type":"Slider","value":"3"},{"idx":"TriggerFOVRadius","type":"Slider","value":"120"},{"idx":"AimbotFOVDeg","type":"Slider","value":"20"},{"idx":"ColorEnemyOcc","type":"ColorPicker","transparency":0,"value":"a85560"},{"idx":"HitLogsSize","type":"Slider","value":"19"},{"idx":"ESPCornerLength","type":"Slider","value":"0.28"},{"idx":"ESPHealthNumberMode","type":"Dropdown","value":"OnDamage"},{"idx":"DmgNumCritColor","type":"ColorPicker","transparency":0,"value":"ffc83c"},{"idx":"SilentAimManipulateMode","type":"Dropdown","value":"OnBestTarget"},{"idx":"TriggerFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"AimbotReactionMs","type":"Slider","value":"0"},{"idx":"ESPTracerGradB","type":"ColorPicker","transparency":0,"value":"ff3b4e"},{"idx":"FOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPBoxColorMode","type":"Dropdown","value":"Solid"},{"idx":"RagePBEyeUp","type":"Slider","value":"3"},{"idx":"SkyboxPreset","type":"Dropdown","value":"Off"},{"idx":"WeatherSoundVolume","type":"Slider","value":"0.34"},{"idx":"FXFovColorB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ThirdPersonDistance","type":"Slider","value":"12"},{"idx":"AimbotFOVPosition","type":"Dropdown","value":"Target"},{"idx":"VisualsPreset","type":"Dropdown","value":"Sunset"},{"idx":"TriggerFOVFillColor2","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"ESPMaxDistance","type":"Slider","value":"1200"},{"idx":"ESPHealthGradA","type":"ColorPicker","transparency":0,"value":"ff4436"},{"idx":"AimbotFOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPChamsOutlineTransparency","type":"Slider","value":"0"},{"idx":"FXBeamHitColor","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"RageFOVOutline1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"FreecamSpeed","type":"Slider","value":"6"},{"idx":"AimbotDeadzoneDeg","type":"Slider","value":"0"},{"idx":"RageVoidResolverLimit","type":"Slider","value":"50000"},{"idx":"VisualsHologramAccent","type":"ColorPicker","transparency":0,"value":"ff3cc8"},{"idx":"RagePulseShootAttempts","type":"Slider","value":"8"},{"idx":"AimbotFOVOutlineRotation","type":"Slider","value":"0"}]}
+]==])
+            ensure("[LEGIT] Ash.json", [==[
+{"objects":[{"idx":"GVRemember","type":"Toggle","value":true},{"idx":"AimbotFOVFillAnimated","type":"Toggle","value":true},{"idx":"ESP","type":"Toggle","value":false},{"idx":"Weather","type":"Toggle","value":false},{"idx":"RageFOVFilled","type":"Toggle","value":false},{"idx":"AimbotShowLock","type":"Toggle","value":false},{"idx":"PredictiveLead","type":"Toggle","value":true},{"idx":"CounterTargetLegits","type":"Toggle","value":true},{"idx":"FakePosHideMeshes","type":"Toggle","value":true},{"idx":"GVEmotes","type":"Toggle","value":false},{"idx":"ESPTracers","type":"Toggle","value":false},{"idx":"ShowCustomCursor","type":"Toggle","value":true},{"idx":"AnimLoop","type":"Toggle","value":true},{"idx":"ChatSpam","type":"Toggle","value":false},{"idx":"FeelNoInspectCd","type":"Toggle","value":true},{"idx":"Freecam","type":"Toggle","value":false},{"idx":"SpooferFavoriteMapEnabled","type":"Toggle","value":false},{"idx":"HUD","type":"Toggle","value":false},{"idx":"RageAntiTranslocate","type":"Toggle","value":false},{"idx":"ThirdPersonUnlockMouse","type":"Toggle","value":false},{"idx":"RageShieldBackstab","type":"Toggle","value":true},{"idx":"PlayerNoclip","type":"Toggle","value":false},{"idx":"AutoLoadoutEnabled","type":"Toggle","value":false},{"idx":"ShootSound","type":"Toggle","value":false},{"idx":"slide_boost","type":"Toggle","value":false},{"idx":"FakePosVisualizer","type":"Toggle","value":true},{"idx":"PlayerInfJump","type":"Toggle","value":false},{"idx":"AimbotCancelSprings","type":"Toggle","value":true},{"idx":"RageShowInfo","type":"Toggle","value":false},{"idx":"WeatherStorm","type":"Toggle","value":false},{"idx":"FFAAutoRespawn","type":"Toggle","value":false},{"idx":"ThirdPerson","type":"Toggle","value":false},{"idx":"PlayerJumpPowerOn","type":"Toggle","value":false},{"idx":"PlayerWalkSpeedOn","type":"Toggle","value":false},{"idx":"RageSkipImmune","type":"Toggle","value":true},{"idx":"FakePosAutoNoclip","type":"Toggle","value":true},{"idx":"AimbotLinkAxes","type":"Toggle","value":true},{"idx":"AntiAimApplyBody","type":"Toggle","value":false},{"idx":"GunFastShoot","type":"Toggle","value":false},{"idx":"AntiAimMicroJitter","type":"Toggle","value":false},{"idx":"CameraFovOverride","type":"Toggle","value":false},{"idx":"ESPAmmoBar","type":"Toggle","value":false},{"idx":"GVUnlockAll","type":"Toggle","value":true},{"idx":"CrosshairDisableGame","type":"Toggle","value":true},{"idx":"CrosshairRotate","type":"Toggle","value":false},{"idx":"AimbotFOVSpin","type":"Toggle","value":false},{"idx":"CustomCrosshair","type":"Toggle","value":false},{"idx":"ESPDistanceScaling","type":"Toggle","value":true},{"idx":"FeelAlwaysDmg","type":"Toggle","value":false},{"idx":"SpooferWinPercentEnabled","type":"Toggle","value":false},{"idx":"ShowTriggerFOV","type":"Toggle","value":false},{"idx":"RageKnifeBackstab","type":"Toggle","value":true},{"idx":"RageAntiAA","type":"Toggle","value":false},{"idx":"PlayerFlight","type":"Toggle","value":false},{"idx":"FXKillBanner","type":"Toggle","value":true},{"idx":"GunFastProjectile","type":"Toggle","value":false},{"idx":"SilentAimManipulate","type":"Toggle","value":false},{"idx":"Phase","type":"Toggle","value":false},{"idx":"BlinkAutoSend","type":"Toggle","value":false},{"idx":"SpooferRankedWinsEnabled","type":"Toggle","value":false},{"idx":"AimbotPrediction","type":"Toggle","value":false},{"idx":"QueueEnabled","type":"Toggle","value":false},{"idx":"FXDamageNumbers","type":"Toggle","value":true},{"idx":"FeelNoWeaponCd","type":"Toggle","value":false},{"idx":"AntiKatana","type":"Toggle","value":true},{"idx":"FeelInstantEquip","type":"Toggle","value":false},{"idx":"ESPHeadDot","type":"Toggle","value":false},{"idx":"ESPLockChevron","type":"Toggle","value":false},{"idx":"FakePosAnimDesync","type":"Toggle","value":true},{"idx":"RageFOVSpin","type":"Toggle","value":false},{"idx":"HitLogsShowHP","type":"Toggle","value":true},{"idx":"WeatherShootingStars","type":"Toggle","value":false},{"idx":"ESPName","type":"Toggle","value":true},{"idx":"HUDWatermark","type":"Toggle","value":true},{"idx":"AntiDeflect","type":"Toggle","value":true},{"idx":"StaffDetectorKick","type":"Toggle","value":false},{"idx":"RagePrioritizeHackers","type":"Toggle","value":true},{"idx":"ESPThreatCount","type":"Toggle","value":false},{"idx":"ESPHealthGhost","type":"Toggle","value":true},{"idx":"AntiFlashbang","type":"Toggle","value":false},{"idx":"RageJitterBreak","type":"Toggle","value":false},{"idx":"ThirdPersonEnabled","type":"Toggle","value":false},{"idx":"TriggerFOVFillAnimated","type":"Toggle","value":true},{"idx":"ESPWeapon","type":"Toggle","value":false},{"idx":"FakePosPanic","type":"Toggle","value":false},{"idx":"AntiTrip","type":"Toggle","value":false},{"idx":"handcaps","type":"Toggle","value":false},{"idx":"RageForceBody","type":"Toggle","value":false},{"idx":"DeathSoundEnable","type":"Toggle","value":false},{"idx":"KillSoundEnable","type":"Toggle","value":false},{"idx":"SilentAimTorsoFallback","type":"Toggle","value":false},{"idx":"HitLogsShowLethal","type":"Toggle","value":true},{"idx":"FeelCustomAdsFov","type":"Toggle","value":false},{"idx":"HitLogsEnable","type":"Toggle","value":false},{"idx":"HitSoundEnable","type":"Toggle","value":false},{"idx":"ESPNameHealthUnderline","type":"Toggle","value":false},{"idx":"ESPFlagShield","type":"Toggle","value":true},{"idx":"FXHitMarker","type":"Toggle","value":true},{"idx":"VisualsPerformanceMode","type":"Toggle","value":true},{"idx":"GameVisuals","type":"Toggle","value":true},{"idx":"DmgNumEnable","type":"Toggle","value":false},{"idx":"WeatherMeteors","type":"Toggle","value":false},{"idx":"FXCrosshair","type":"Toggle","value":false},{"idx":"QueueRanked","type":"Toggle","value":false},{"idx":"AnimAutoRespawn","type":"Toggle","value":true},{"idx":"Aimbot","type":"Toggle","value":false},{"idx":"KeybindMenuOpen","type":"Toggle","value":false},{"idx":"ShowAimbotFOV","type":"Toggle","value":false},{"idx":"AnimEnabled","type":"Toggle","value":false},{"idx":"CounterHud","type":"Toggle","value":true},{"idx":"ESPPeekAlert","type":"Toggle","value":false},{"idx":"VMOffsetEnabled","type":"Toggle","value":false},{"idx":"SilentManipIndicator","type":"Toggle","value":true},{"idx":"MiscTracerEnable","type":"Toggle","value":false},{"idx":"DeviceSpoofEnable","type":"Toggle","value":true},{"idx":"RagePreferMeleeOnDeflect","type":"Toggle","value":true},{"idx":"WeatherGodRays","type":"Toggle","value":false},{"idx":"WeatherMood","type":"Toggle","value":true},{"idx":"ESPArrowDistFade","type":"Toggle","value":true},{"idx":"ESPDistance","type":"Toggle","value":true},{"idx":"RageAttackTranslocate","type":"Toggle","value":false},{"idx":"GunGrenadeThrow","type":"Toggle","value":false},{"idx":"CounterEnabled","type":"Toggle","value":false},{"idx":"FXBeamTracer","type":"Toggle","value":false},{"idx":"FakePosWalkMode","type":"Toggle","value":true},{"idx":"GunGrenadeImpact","type":"Toggle","value":false},{"idx":"GunAlwaysBackstab","type":"Toggle","value":false},{"idx":"SpooferLevelEnabled","type":"Toggle","value":false},{"idx":"ESPFlagStaring","type":"Toggle","value":false},{"idx":"GunFullAuto","type":"Toggle","value":false},{"idx":"Rage","type":"Toggle","value":false},{"idx":"CameraAspectRatioEnabled","type":"Toggle","value":false},{"idx":"AutoCollectDrops","type":"Toggle","value":false},{"idx":"GunNoSpread","type":"Toggle","value":false},{"idx":"RagePrediction","type":"Toggle","value":false},{"idx":"SpooferRankedEloEnabled","type":"Toggle","value":false},{"idx":"GunNoRecoil","type":"Toggle","value":false},{"idx":"DeviceSpoofLoop","type":"Toggle","value":false},{"idx":"GunGrenadeNoFuse","type":"Toggle","value":false},{"idx":"Blink","type":"Toggle","value":false},{"idx":"AutoBanQueueEnable","type":"Toggle","value":false},{"idx":"FXCrosshairSniper","type":"Toggle","value":false},{"idx":"AimbotSkipImmune","type":"Toggle","value":true},{"idx":"ESPBox","type":"Toggle","value":true},{"idx":"TargetHUD","type":"Toggle","value":false},{"idx":"RageProjectileForceHit","type":"Toggle","value":false},{"idx":"ProjectileTP","type":"Toggle","value":false},{"idx":"FXFovCasing","type":"Toggle","value":true},{"idx":"ESPBoxFill","type":"Toggle","value":false},{"idx":"FXFovRotate","type":"Toggle","value":true},{"idx":"ProjectileLead","type":"Toggle","value":false},{"idx":"RagePulsePreferBehind","type":"Toggle","value":true},{"idx":"SilentFOVFillAnimated","type":"Toggle","value":true},{"idx":"RageAutoRetarget","type":"Toggle","value":true},{"idx":"FXCrosshairOutline","type":"Toggle","value":true},{"idx":"FXCrosshairDot","type":"Toggle","value":true},{"idx":"CameraSpin","type":"Toggle","value":false},{"idx":"RageCombatOrbitJitter","type":"Toggle","value":true},{"idx":"ESPFlagDeflect","type":"Toggle","value":true},{"idx":"AntiAimEnable","type":"Toggle","value":false},{"idx":"FXCrosshairSpin","type":"Toggle","value":false},{"idx":"AimbotCurvedFlick","type":"Toggle","value":false},{"idx":"FeelNoSway","type":"Toggle","value":false},{"idx":"SpooferWinStreakEnabled","type":"Toggle","value":false},{"idx":"CollectAmmo","type":"Toggle","value":true},{"idx":"SpooferCasualWinsEnabled","type":"Toggle","value":false},{"idx":"SpooferNameEnabled","type":"Toggle","value":true},{"idx":"ESPRadar","type":"Toggle","value":false},{"idx":"GVRankCharmOn","type":"Toggle","value":false},{"idx":"GVUnlockWeapons","type":"Toggle","value":false},{"idx":"FXCrosshairBounce","type":"Toggle","value":false},{"idx":"ESPHealTick","type":"Toggle","value":false},{"idx":"VisualsHologramLethal","type":"Toggle","value":true},{"idx":"VisualsHolograms","type":"Toggle","value":false},{"idx":"RageExposureSnipe","type":"Toggle","value":false},{"idx":"VMDisableTextures","type":"Toggle","value":false},{"idx":"RageProjectileBreaker","type":"Toggle","value":false},{"idx":"AimbotDebug","type":"Toggle","value":false},{"idx":"ESPChams","type":"Toggle","value":false},{"idx":"ESPFadeIn","type":"Toggle","value":true},{"idx":"ESPSkeleton","type":"Toggle","value":false},{"idx":"FakePosEnable","type":"Toggle","value":false},{"idx":"WeatherPuddles","type":"Toggle","value":false},{"idx":"RagePredictPrefire","type":"Toggle","value":true},{"idx":"ESPChamsVisSplit","type":"Toggle","value":true},{"idx":"WeatherRainbow","type":"Toggle","value":false},{"idx":"Visuals","type":"Toggle","value":true},{"idx":"TriggerFOVFilled","type":"Toggle","value":true},{"idx":"SilentAimMultipoint","type":"Toggle","value":false},{"idx":"AimbotVisCheck","type":"Toggle","value":true},{"idx":"CounterTargetBots","type":"Toggle","value":true},{"idx":"HUDWatermarkStats","type":"Toggle","value":true},{"idx":"WeatherStormFlash","type":"Toggle","value":true},{"idx":"DmgNumGradient","type":"Toggle","value":false},{"idx":"RageVoidResolver","type":"Toggle","value":true},{"idx":"VisualsNoFog","type":"Toggle","value":false},{"idx":"TriggerScopeCheck","type":"Toggle","value":false},{"idx":"ESPHealth","type":"Toggle","value":true},{"idx":"SilentAim","type":"Toggle","value":false},{"idx":"FakePosSurfaceCam","type":"Toggle","value":true},{"idx":"RageBacktrack","type":"Toggle","value":true},{"idx":"VisualsFullbright","type":"Toggle","value":true},{"idx":"VisualsBloom","type":"Toggle","value":false},{"idx":"SilentAimJitter","type":"Toggle","value":true},{"idx":"RageVoidSpam","type":"Toggle","value":false},{"idx":"TriggerFOVSpin","type":"Toggle","value":false},{"idx":"TeamCheck","type":"Toggle","value":true},{"idx":"AimbotDirectCamera","type":"Toggle","value":false},{"idx":"RageGatePoison","type":"Toggle","value":true},{"idx":"AntiAimUnderground","type":"Toggle","value":false},{"idx":"AimbotFOVFilled","type":"Toggle","value":true},{"idx":"SkyboxHideCelestial","type":"Toggle","value":false},{"idx":"GVWrapInverted","type":"Toggle","value":false},{"idx":"ESPArrowDistLabel","type":"Toggle","value":false},{"idx":"ESPDeclutter","type":"Toggle","value":true},{"idx":"ESPArrows","type":"Toggle","value":false},{"idx":"RageShowFOV","type":"Toggle","value":false},{"idx":"VMChamsEnabled","type":"Toggle","value":false},{"idx":"RagePulseHideAfterShots","type":"Toggle","value":true},{"idx":"ESPFlagLowHP","type":"Toggle","value":true},{"idx":"ESPLookLine","type":"Toggle","value":false},{"idx":"ESPFlagInvincible","type":"Toggle","value":true},{"idx":"ShowFOV","type":"Toggle","value":false},{"idx":"CollectHealth","type":"Toggle","value":true},{"idx":"DmgNumOutline","type":"Toggle","value":true},{"idx":"SilentFOVFilled","type":"Toggle","value":true},{"idx":"FakePosZeroVel","type":"Toggle","value":true},{"idx":"SilentAimVisCheck","type":"Toggle","value":true},{"idx":"SilentFOVSpin","type":"Toggle","value":false},{"idx":"AimbotShotOverride","type":"Toggle","value":false},{"idx":"Trigger","type":"Toggle","value":false},{"idx":"VisualsRainbowMap","type":"Toggle","value":false},{"idx":"RageStaticBehind","type":"Toggle","value":true},{"idx":"WeatherClockDial","type":"Toggle","value":false},{"idx":"RageVoidChase","type":"Toggle","value":false},{"idx":"ESPHealthSmooth","type":"Toggle","value":true},{"idx":"ESPTeamCheck","type":"Toggle","value":true},{"idx":"AvoidDeflect","type":"Toggle","value":true},{"idx":"RageAntiKnife","type":"Toggle","value":false},{"idx":"TriggerHeadOnly","type":"Toggle","value":false},{"idx":"RageResolver","type":"Toggle","value":false},{"idx":"moddetector","type":"Toggle","value":true},{"idx":"ESPHealthGradB","type":"ColorPicker","transparency":0,"value":"3de07a"},{"idx":"ESPTracerOrigin","type":"Dropdown","value":"Bottom"},{"idx":"RageOnEmpty","type":"Dropdown","value":"Swap"},{"idx":"ESPNameColorMode","type":"Dropdown","value":"Solid"},{"idx":"KillSoundPreset","type":"Dropdown","value":"Fatality"},{"idx":"CounterLegitDelay","type":"Slider","value":"3"},{"idx":"VisualsBloomIntensity","type":"Slider","value":"1"},{"idx":"ESPDistanceScalingRef","type":"Slider","value":"50"},{"idx":"AutoBanSearch2","type":"Input","text":""},{"idx":"VisualsGrade","type":"Dropdown","value":"Comp"},{"idx":"BlinkSendThreshold","type":"Slider","value":"0.5"},{"idx":"ESPInfoColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"AimbotSmoothnessY","type":"Slider","value":"0"},{"idx":"AntiAimPitch","type":"Dropdown","value":"disabled"},{"idx":"CounterMode","type":"Dropdown","value":"Kicia"},{"idx":"RagePulseAttackInside","type":"Slider","value":"0.3"},{"idx":"SpooferCasualWins","type":"Input","text":"500"},{"idx":"CombatSoundPitch","type":"Slider","value":"100"},{"idx":"GunEquipSpeed","type":"Slider","value":"1"},{"idx":"RageGumMode","type":"Dropdown","value":"on"},{"idx":"RageCombatOrbitRadius","type":"Slider","value":"60"},{"idx":"PlayerJumpPower","type":"Slider","value":"50"},{"idx":"HUDToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"AntiAimSpinSpeed","type":"Slider","value":"720"},{"idx":"WeatherStarRate","type":"Slider","value":"1"},{"idx":"RageStrobeShots","type":"Slider","value":"4"},{"idx":"ESPTextScale","type":"Slider","value":"1"},{"idx":"WeatherType","type":"Dropdown","value":"Ash"},{"idx":"AimbotFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"ESPGradientRotText","type":"Slider","value":"90"},{"idx":"SilentAimBodyMix","type":"Slider","value":"45"},{"idx":"AimbotSmoothnessX","type":"Slider","value":"0"},{"idx":"RageAttackMode","type":"Dropdown","value":"Auto"},{"idx":"ESPMaxPlayers","type":"Slider","value":"0"},{"idx":"AimbotFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"FOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPSkeletonGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePBDepthUpMin","type":"Slider","value":"1"},{"idx":"ESPGradientRotBox","type":"Slider","value":"0"},{"idx":"RageStrobeSlots","type":"Slider","value":"3"},{"idx":"AimbotFOVFillRotation","type":"Slider","value":"0"},{"idx":"AimbotTrackAssist","type":"Slider","value":"100"},{"idx":"RageOrbitDwell","type":"Slider","value":"0.3"},{"idx":"CounterZigAmp","type":"Slider","value":"400"},{"idx":"FXBeamStyle","type":"Dropdown","value":"Glow"},{"idx":"TriggerFOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"DmgNumKillColor","type":"ColorPicker","transparency":0,"value":"ff4646"},{"idx":"AimbotStickiness","type":"Slider","value":"0.28"},{"idx":"AutoLoadoutMelee","type":"Dropdown","value":"Fists"},{"idx":"AimbotFOVFillColor2","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"slide_speed","type":"Slider","value":"62"},{"idx":"SilentFOVOutlineRotation","type":"Slider","value":"0"},{"idx":"ESPInfoTextSize","type":"Slider","value":"12"},{"idx":"FakePosVizColor","type":"ColorPicker","transparency":0,"value":"00a2ff"},{"idx":"ProjectileSpeed","type":"Slider","value":"300"},{"idx":"RagePBSideJitter","type":"Slider","value":"1.5"},{"idx":"RagePulseAttackBehind","type":"Slider","value":"1.4"},{"idx":"ESPFont","type":"Dropdown","value":"Code"},{"idx":"CameraSpinSpeed","type":"Slider","value":"1"},{"idx":"RageTranslocateOffset","type":"Slider","value":"-5"},{"idx":"SpooferWinPercent","type":"Input","text":"75"},{"idx":"AimbotToggleKey","type":"KeyPicker","key":"MB2","mode":"Hold","modifiers":[]},{"idx":"FXFovColorA","type":"ColorPicker","transparency":0,"value":"35d7c7"},{"idx":"SilentAimStickiness","type":"Slider","value":"0.14"},{"idx":"ESPSkeletonColorMode","type":"Dropdown","value":"Solid"},{"idx":"CounterCycleMs","type":"Slider","value":"50"},{"idx":"DeviceSpoofInterval","type":"Slider","value":"2"},{"idx":"FFAAutoRespawnDelay","type":"Slider","value":"0.35"},{"idx":"ShootSoundVolume","type":"Slider","value":"0.5"},{"idx":"ESPCasingThickness","type":"Slider","value":"1"},{"idx":"SilentFOVOutlineThickness","type":"Slider","value":"1.5"},{"idx":"RageVoidResolverLimit","type":"Slider","value":"50000"},{"idx":"CounterFlyMs","type":"Slider","value":"25"},{"idx":"ESPChamsStyle","type":"Dropdown","value":"Shade"},{"idx":"AimbotCurvedIntensity","type":"Slider","value":"0.35"},{"idx":"MiscTracerDuration","type":"Slider","value":"3"},{"idx":"AnimPrimaryId","type":"Input","text":"96579993895076"},{"idx":"VMChamsTransparency","type":"Slider","value":"0.5"},{"idx":"CounterFlySpeed","type":"Slider","value":"15000"},{"idx":"BlinkKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"ESPSkeletonThickness","type":"Slider","value":"1"},{"idx":"DmgNumGradTop","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SilentFOVFillColor2","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"RageFOVFill2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"GunFireRate","type":"Slider","value":"100"},{"idx":"AimbotFOVOutlineThickness","type":"Slider","value":"1.5"},{"idx":"RageStrobeJitter","type":"Slider","value":"0.25"},{"idx":"TriggerFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"AntiAimPitchAngle","type":"Slider","value":"89"},{"idx":"TriggerFOVPosition","type":"Dropdown","value":"Target"},{"idx":"CameraFovAmount","type":"Slider","value":"90"},{"idx":"RageVoidSpamRate","type":"Slider","value":"0.05"},{"idx":"CounterDepth","type":"Slider","value":"6"},{"idx":"TriggerFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePulseHideSeconds","type":"Slider","value":"0.08"},{"idx":"RageResolverMode","type":"Dropdown","value":"Auto"},{"idx":"AimbotFOVFillSpeed","type":"Slider","value":"1"},{"idx":"VisualsGradeStrength","type":"Slider","value":"0.6"},{"idx":"SilentAimJitterDeg","type":"Slider","value":"2.5"},{"idx":"ESPNameGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ESPHeadDotSize","type":"Slider","value":"4"},{"idx":"RageInfoFont","type":"Dropdown","value":"GothamBold"},{"idx":"WeatherIntensity","type":"Slider","value":"2"},{"idx":"SilentFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"HitLogsPhraseMode","type":"Dropdown","value":"Random"},{"idx":"CounterVoidSpeed","type":"Slider","value":"3000"},{"idx":"FakePosKeyPick","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"VMChamsColor","type":"ColorPicker","transparency":0,"value":"35d7c7"},{"idx":"AnimPreset","type":"Dropdown","value":"Meditate"},{"idx":"SpooferName","type":"Input","text":"ProPlayer"},{"idx":"CounterBoost","type":"Slider","value":"100000"},{"idx":"CombatSoundVol","type":"Slider","value":"100"},{"idx":"NotifySide","type":"Dropdown","value":"Left"},{"idx":"ESPBoxScale","type":"Slider","value":"1"},{"idx":"RagePreferredSlot","type":"Dropdown","value":"Primary"},{"idx":"RageFOVPosition","type":"Dropdown","value":"Target"},{"idx":"RageMeleeReach","type":"Slider","value":"18"},{"idx":"VMOffsetPitch","type":"Slider","value":"0"},{"idx":"ESPTracerColorMode","type":"Dropdown","value":"Solid"},{"idx":"BlinkType","type":"Dropdown","value":"Movement Only"},{"idx":"RagePulseAttackSeconds","type":"Slider","value":"0.12"},{"idx":"MiscTracerStyle","type":"Dropdown","value":"Beam"},{"idx":"AimbotPriority","type":"Dropdown","value":"Crosshair"},{"idx":"FXCrosshairThickness","type":"Slider","value":"2"},{"idx":"SilentAimHitChance","type":"Slider","value":"50"},{"idx":"RagePredictionMulti","type":"Slider","value":"1.2"},{"idx":"VMOffsetZ","type":"Slider","value":"0"},{"idx":"ESPHealthColor","type":"ColorPicker","transparency":0,"value":"3de07a"},{"idx":"ESPHealthColorMode","type":"Dropdown","value":"Ramp"},{"idx":"AimbotOvershoot","type":"Slider","value":"0"},{"idx":"SilentFOVOutlineTransparency","type":"Slider","value":"0"},{"idx":"AimbotForgetTime","type":"Slider","value":"0.16"},{"idx":"ESPFlagGradA","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"HitLogsMaxWidth","type":"Slider","value":"420"},{"idx":"SilentManipIndicatorSize","type":"Slider","value":"16"},{"idx":"SilentAimFOV","type":"Slider","value":"130"},{"idx":"RageFOVFill1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SpooferWinStreak","type":"Input","text":"25"},{"idx":"SilentManipIndicatorFont","type":"Dropdown","value":"GothamBold"},{"idx":"VisualsHologramDuration","type":"Slider","value":"3.5"},{"idx":"RageStrobeAttackSec","type":"Slider","value":"0.1"},{"idx":"ESPNameGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"PhaseWallSize","type":"Slider","value":"5"},{"idx":"ESPSkeletonColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SpooferDisplayName","type":"Input","text":"Vertex Enjoyer"},{"idx":"VisualsHologramColor","type":"ColorPicker","transparency":0,"value":"00dcff"},{"idx":"CameraAspectRatioX","type":"Slider","value":"4"},{"idx":"SilentAimMultipointCount","type":"Slider","value":"5"},{"idx":"CounterZigFreq","type":"Slider","value":"8"},{"idx":"AimbotJumpDamping","type":"Slider","value":"40"},{"idx":"RageStrobeHideSec","type":"Slider","value":"0.18"},{"idx":"VMOffsetY","type":"Slider","value":"0"},{"idx":"RageCombatOrbitHeight","type":"Slider","value":"8"},{"idx":"DmgNumColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPMarkGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"DeviceSpoofType","type":"Dropdown","value":"MouseKeyboard"},{"idx":"ESPTracerColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"LeadCap","type":"Slider","value":"15"},{"idx":"AntiAimUndergroundKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"VMOffsetYaw","type":"Slider","value":"0"},{"idx":"AimbotMaxSpeed","type":"Slider","value":"217"},{"idx":"TriggerFOVFillColor2","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"SilentFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"TriggerFOVFillSpeed","type":"Slider","value":"1"},{"idx":"WeatherMeteorRate","type":"Slider","value":"1"},{"idx":"ColorVisible","type":"ColorPicker","transparency":0,"value":"29e0ff"},{"idx":"MaxDistance","type":"Slider","value":"1200"},{"idx":"RageFOVOutline2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"FeelAdsFovOffset","type":"Slider","value":"0"},{"idx":"FXCrosshairStyle","type":"Dropdown","value":"Cross"},{"idx":"FreecamKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"MiscTracerEdge","type":"ColorPicker","transparency":0,"value":"000000"},{"idx":"SilentManipIndicatorPos","type":"Dropdown","value":"Below Crosshair"},{"idx":"MiscTracerMain","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SpooferRankedWins","type":"Input","text":"250"},{"idx":"PlayerFlightSpeed","type":"Slider","value":"50"},{"idx":"SilentAimTargetPart","type":"Dropdown","value":"Head"},{"idx":"RageStrobeBehind","type":"Slider","value":"1.2"},{"idx":"PlayerWalkSpeed","type":"Slider","value":"16"},{"idx":"SilentAimManipulateRange","type":"Slider","value":"48"},{"idx":"ESPMarkGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPFlagGradB","type":"ColorPicker","transparency":0,"value":"ff4655"},{"idx":"SilentAimKey","type":"KeyPicker","key":"Q","mode":"Toggle","modifiers":[]},{"idx":"TriggerFOVOutlineRotation","type":"Slider","value":"0"},{"idx":"HitSoundPreset","type":"Dropdown","value":"Rust"},{"idx":"AntiAimKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"CrosshairSize","type":"Slider","value":"32"},{"idx":"AimbotTargetPart","type":"Dropdown","value":"Best"},{"idx":"SilentFOVSpinSpd","type":"Slider","value":"1"},{"idx":"RagePBDepthUpMax","type":"Slider","value":"4"},{"idx":"TriggerToggleKey","type":"KeyPicker","key":"X","mode":"Toggle","modifiers":[]},{"idx":"TriggerMaxDist","type":"Slider","value":"400"},{"idx":"ESPTracerThickness","type":"Slider","value":"1"},{"idx":"ESPTextSize","type":"Slider","value":"14"},{"idx":"VMOffsetX","type":"Slider","value":"0"},{"idx":"RageStaticJitter","type":"Slider","value":"0.35"},{"idx":"SilentManipIndicatorColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"CrosshairImageUrl","type":"Input","text":""},{"idx":"ESPBoxStyle","type":"Dropdown","value":"Full Box"},{"idx":"ESPFlagColor","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ESPMarkColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RagePBDepthForwardMin","type":"Slider","value":"4"},{"idx":"RageVoidDepth","type":"Dropdown","value":"deep"},{"idx":"SilentFOVFillRotation","type":"Slider","value":"0"},{"idx":"AimbotFOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"AimbotNoiseDeg","type":"Slider","value":"0"},{"idx":"ShootSoundId","type":"Input","text":"4049646104"},{"idx":"ChatSpamDelay","type":"Slider","value":"1.5"},{"idx":"ESPInfoColorMode","type":"Dropdown","value":"Solid"},{"idx":"ESPTracerGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RageStrobeSide","type":"Slider","value":"1.6"},{"idx":"ChatSpamText","type":"Input","text":"Vertex.lol"},{"idx":"RagePBDepthForwardMax","type":"Slider","value":"9"},{"idx":"ESPBoxGradB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"AutoBanWeapon2","type":"Dropdown","multi":false,"value":"Katana"},{"idx":"ChatSpamMode","type":"Dropdown","value":"custom"},{"idx":"RageStaticBehindY","type":"Slider","value":"0"},{"idx":"PhaseMode","type":"Dropdown","value":"Character"},{"idx":"PhaseKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"AntiAimYaw","type":"Dropdown","value":"disabled"},{"idx":"HitLogsType","type":"Dropdown","value":"Custom GUI"},{"idx":"RageMode","type":"Dropdown","value":"Polar"},{"idx":"HitLogsLethalPhrase","type":"Dropdown","value":"eliminated"},{"idx":"RageVoidSpamAmount","type":"Slider","value":"3"},{"idx":"HitLogsPhrase","type":"Dropdown","value":"hit"},{"idx":"HitLogsMax","type":"Slider","value":"6"},{"idx":"FXCrosshairAngle","type":"Slider","value":"0"},{"idx":"ESPHealthNumberMode","type":"Dropdown","value":"OnDamage"},{"idx":"HitLogsDuration","type":"Slider","value":"2.5"},{"idx":"RageTargetPriority","type":"Dropdown","value":"Auto"},{"idx":"FakePosDepth","type":"Slider","value":"5.8"},{"idx":"VMOffsetRoll","type":"Slider","value":"0"},{"idx":"DmgNumGradBot","type":"ColorPicker","transparency":0,"value":"ff5078"},{"idx":"DmgNumRiseSpread","type":"Slider","value":"70"},{"idx":"DmgNumRise","type":"Slider","value":"48"},{"idx":"RageInfoSize","type":"Slider","value":"14"},{"idx":"DmgNumDuration","type":"Slider","value":"1.1"},{"idx":"DmgNumSize","type":"Slider","value":"22"},{"idx":"DmgNumFont","type":"Dropdown","value":"GothamBold"},{"idx":"RageRestoreMode","type":"Dropdown","value":"auto"},{"idx":"FXCrosshairColor","type":"ColorPicker","transparency":0,"value":"f3f6fa"},{"idx":"AnimKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"RagePulseAttackJitter","type":"Slider","value":"0.3"},{"idx":"SilentFOVFillSpeed","type":"Slider","value":"1"},{"idx":"AimbotFOVDegVis","type":"Slider","value":"20"},{"idx":"MiscTracerFade","type":"Slider","value":"0.5"},{"idx":"MiscTracerOutlineSize","type":"Slider","value":"2.25"},{"idx":"AimbotSwitchDeg","type":"Slider","value":"9.7"},{"idx":"MiscTracerMainSize","type":"Slider","value":"1"},{"idx":"ThirdPersonMode","type":"Dropdown","value":"ThirdPerson"},{"idx":"TriggerFOVSpinSpd","type":"Slider","value":"1"},{"idx":"QueueMode","type":"Dropdown","multi":false,"value":"1v1"},{"idx":"TriggerFOVOutlineThickness","type":"Slider","value":"1.5"},{"idx":"AutoBanSearch1","type":"Input","text":""},{"idx":"AutoBanWeapon1","type":"Dropdown","multi":false,"value":"Riot Shield"},{"idx":"AutoLoadoutUtility","type":"Dropdown","value":"Grenade"},{"idx":"ESPBoxThickness","type":"Slider","value":"1"},{"idx":"AutoLoadoutSecondary","type":"Dropdown","value":"Handgun"},{"idx":"RageToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"AutoLoadoutPrimary","type":"Dropdown","value":"Assault Rifle"},{"idx":"ColorEnemyOcc","type":"ColorPicker","transparency":0,"value":"a85560"},{"idx":"RageBacktrackMs","type":"Slider","value":"150"},{"idx":"ESPFlagColorMode","type":"Dropdown","value":"PerFlag"},{"idx":"RageFOV","type":"Slider","value":"180"},{"idx":"WeatherSoundVolume","type":"Slider","value":"1"},{"idx":"TriggerDelayMs","type":"Slider","value":"0"},{"idx":"AimbotFOVFillColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"AimbotFOVPosition","type":"Dropdown","value":"Target"},{"idx":"ESPInfoGradB","type":"ColorPicker","transparency":0,"value":"ff9e4b"},{"idx":"ESPGradientSpeed","type":"Slider","value":"0"},{"idx":"FXCrosshairGap","type":"Slider","value":"4"},{"idx":"SpooferFavoriteMap","type":"Input","text":"Arena"},{"idx":"AntiAimYawAngle","type":"Slider","value":"180"},{"idx":"CounterEnabledKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"SilentAimFOVPosition","type":"Dropdown","value":"Target"},{"idx":"VisualsHologramVisibility","type":"Slider","value":"1.4"},{"idx":"SpooferRankedElo","type":"Input","text":"2400"},{"idx":"SpooferLevel","type":"Input","text":"100"},{"idx":"ESPBoxColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPTextCasing","type":"Slider","value":"1"},{"idx":"ShootSoundSpeed","type":"Slider","value":"1"},{"idx":"AntiAimPitchOffset","type":"Slider","value":"0"},{"idx":"ESPSkeletonGradB","type":"ColorPicker","transparency":0,"value":"78b4ff"},{"idx":"TriggerFOVFillRotation","type":"Slider","value":"0"},{"idx":"ESPMarkColorMode","type":"Dropdown","value":"Solid"},{"idx":"ESPNameMode","type":"Dropdown","value":"Display"},{"idx":"SilentAimManipulateMode","type":"Dropdown","value":"OnBlocked"},{"idx":"CounterRadius","type":"Slider","value":"30"},{"idx":"AimbotSmoothness","type":"Slider","value":"75"},{"idx":"RagePulseAttackY","type":"Slider","value":"-0.5"},{"idx":"AimbotFOVSpinSpd","type":"Slider","value":"1"},{"idx":"GVRankCharmLb","type":"Input","text":"0"},{"idx":"AnimSpeed","type":"Slider","value":"2"},{"idx":"ESPNameColor","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"RageStaticBehindDist","type":"Slider","value":"3"},{"idx":"FXCrosshairLen","type":"Slider","value":"7"},{"idx":"VMChamsMaterial","type":"Dropdown","value":"ForceField"},{"idx":"PlayerFlightKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"ESPBoxGradA","type":"ColorPicker","transparency":0,"value":"ff3b4e"},{"idx":"VisualsHologramRange","type":"Slider","value":"300"},{"idx":"VisualsHologramStyle","type":"Dropdown","value":"Orb"},{"idx":"RageFOVOutline1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"CameraAspectRatioY","type":"Slider","value":"3"},{"idx":"TriggerFOVRadius","type":"Slider","value":"120"},{"idx":"AimbotFOVDeg","type":"Slider","value":"20"},{"idx":"ESPChamsFillTransparency","type":"Slider","value":"0.6"},{"idx":"HitLogsSize","type":"Slider","value":"14"},{"idx":"ESPCornerLength","type":"Slider","value":"0.28"},{"idx":"ViewmodelScale","type":"Slider","value":"1"},{"idx":"DmgNumCritColor","type":"ColorPicker","transparency":0,"value":"ffc83c"},{"idx":"TriggerFOVFillTransparency","type":"Slider","value":"0.7"},{"idx":"ESPTracerGradB","type":"ColorPicker","transparency":0,"value":"ff3b4e"},{"idx":"AimbotReactionMs","type":"Slider","value":"0"},{"idx":"FOVOutlineColor2","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"SkyboxPreset","type":"Dropdown","value":"Off"},{"idx":"ESPBoxColorMode","type":"Dropdown","value":"Solid"},{"idx":"RagePBEyeUp","type":"Slider","value":"3"},{"idx":"TriggerRefireMs","type":"Slider","value":"0"},{"idx":"TriggerFOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"FXFovColorB","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ThirdPersonDistance","type":"Slider","value":"12"},{"idx":"VisualsPreset","type":"Dropdown","value":"Neutral"},{"idx":"VisualsToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"ESPMaxDistance","type":"Slider","value":"1200"},{"idx":"ServerProcessingMs","type":"Slider","value":"30"},{"idx":"ESPHealthGradA","type":"ColorPicker","transparency":0,"value":"ff4436"},{"idx":"AimbotFOVOutlineColor1","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPChamsOutlineTransparency","type":"Slider","value":"0"},{"idx":"FXBeamHitColor","type":"ColorPicker","transparency":0,"value":"ffc24b"},{"idx":"ESPInfoGradA","type":"ColorPicker","transparency":0,"value":"ffffff"},{"idx":"ESPToggleKey","type":"KeyPicker","key":"None","mode":"Toggle","modifiers":[]},{"idx":"FreecamSpeed","type":"Slider","value":"13"},{"idx":"AimbotDeadzoneDeg","type":"Slider","value":"0.43"},{"idx":"RageKillPause","type":"Slider","value":"0.12"},{"idx":"VisualsHologramAccent","type":"ColorPicker","transparency":0,"value":"ff3cc8"},{"idx":"RagePulseShootAttempts","type":"Slider","value":"3"},{"idx":"AimbotFOVOutlineRotation","type":"Slider","value":"0"}]}
+]==])
+        end)
+
+        local function applyCommunityConfig(fileName)
+            if not (isfile and readfile) then
+                Library:Notify("Executor missing isfile/readfile", 4)
+                return
+            end
+            local path = COM_FOLDER .. "/" .. fileName
+            if not isfile(path) then
+                Library:Notify("Missing: " .. path, 6)
+                return
+            end
+
+            local ok, data = pcall(function()
+                return HttpService:JSONDecode(readfile(path))
+            end)
+            if not ok or type(data) ~= "table" or type(data.objects) ~= "table" then
+                Library:Notify("Invalid config JSON: " .. fileName, 5)
+                return
+            end
+
+            local applied = 0
+            for _, obj in ipairs(data.objects) do
+                local idx = obj and obj.idx
+                if type(idx) == "string" then
+                    if obj.type == "Toggle" and Toggles[idx] and Toggles[idx].SetValue then
+                        pcall(function() Toggles[idx]:SetValue(obj.value and true or false) end)
+                        applied = applied + 1
+                    elseif obj.type == "Slider" and Options[idx] and Options[idx].SetValue then
+                        pcall(function() Options[idx]:SetValue(tonumber(obj.value) or obj.value) end)
+                        applied = applied + 1
+                    elseif obj.type == "Dropdown" and Options[idx] and Options[idx].SetValue then
+                        pcall(function() Options[idx]:SetValue(obj.value) end)
+                        applied = applied + 1
+                    elseif obj.type == "ColorPicker" and Options[idx] and Options[idx].SetValueRGB
+                        and type(obj.value) == "string" and #obj.value >= 6 then
+                        local r = tonumber(obj.value:sub(1, 2), 16) or 255
+                        local g = tonumber(obj.value:sub(3, 4), 16) or 255
+                        local b = tonumber(obj.value:sub(5, 6), 16) or 255
+                        pcall(function() Options[idx]:SetValueRGB(Color3.fromRGB(r, g, b)) end)
+                        applied = applied + 1
+                    elseif obj.type == "KeyPicker" and Options[idx] and Options[idx].SetValue then
+                        pcall(function()
+                            Options[idx]:SetValue({ obj.key or "None", obj.mode or "Toggle" })
+                        end)
+                        applied = applied + 1
+                    elseif obj.type == "Input" and Options[idx] and Options[idx].SetValue then
+                        pcall(function() Options[idx]:SetValue(tostring(obj.text or "")) end)
+                        applied = applied + 1
+                    end
+                end
+            end
+            Library:Notify(string.format("Loaded %s (%d applied)", fileName, applied), 5)
+        end
+
+        local comBox = SettingsTab:AddRightGroupbox("Community Configs")
+        comBox:AddButton({
+            Text = "[RAGE] Autumn",
+            Func = function()
+                applyCommunityConfig("[RAGE] Autumn.json")
+            end,
+        })
+        comBox:AddButton({
+            Text = "[LEGIT] Ash",
+            Func = function()
+                applyCommunityConfig("[LEGIT] Ash.json")
+            end,
+        })
+    end
+
     SaveManager:BuildConfigSection(SettingsTab)
     ThemeManager:ApplyToTab(SettingsTab)
 
@@ -24246,9 +26160,20 @@ Library.ToggleKeybind = Options.MenuKeybind
     end
 
     local _wmAlive = true
-    local _origUnload = Library.Unload
+        local _origUnload = Library.Unload
     Library.Unload = function(self, ...)
         _wmAlive = false
+        pcall(function() if _G.VertexBlink then _G.VertexBlink.stop() end end)
+        pcall(function() if _G.VertexPhase then _G.VertexPhase.stop() end end)
+        pcall(function() if _G.VertexProjectileTP then _G.VertexProjectileTP.stop() end end)
+        pcall(function() if _G.VertexChatSpam then _G.VertexChatSpam.stop() end end)
+        pcall(function() if _G.VertexThirdPerson then _G.VertexThirdPerson.stop() end end)
+        pcall(function() if _G.VertexFreecam then _G.VertexFreecam.stop() end end)
+        pcall(function() if _G.VertexCrosshair then _G.VertexCrosshair.destroy() end end)
+        pcall(function()
+            UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+            UserInputService.MouseIconEnabled = true
+        end)
         pcall(function()
             if shared._LH_GunOrig and Rivals.Gun then
                 if setreadonly then pcall(setreadonly, Rivals.Gun, false) end
